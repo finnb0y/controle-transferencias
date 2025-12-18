@@ -282,7 +282,7 @@ const ControleTransferencias = () => {
   };
 
   const getDadosGraficoRosquinha = () => {
-    const transferenciasFiltradas = filtrarTransferencias();
+    const transferenciasFiltradas = filtrarTransferencias(true, true);
     const totais = { especie: 0, digital: 0 };
 
     transferenciasFiltradas.forEach(t => {
