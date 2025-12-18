@@ -256,67 +256,47 @@ const ControleTransferencias = () => {
     return Array.from(anos).sort((a, b) => b - a);
   };
 
-  const filtrarTransferencias = (incluirMeses = true) => {
-    return transferencias.filter(t => {
-      const partes = t.data.split('/');
-      if (partes.length !== 3) return false;
+  const filtrarTransferencias = (incluirMeses = true, ordenarPorData = false) => {
+  let resultado = transferencias.filter(t => {
+    const partes = t.data.split('/');
+    if (partes.length !== 3) return false;
+    
+    const mesTransferencia = parseInt(partes[1]) - 1;
+    const anoTransferencia = parseInt(partes[2]);
+    
+    if (anoTransferencia !== anoFiltro) return false;
+    
+    if (incluirMeses && mesesSelecionados.length > 0) {
+      return mesesSelecionados.includes(mesTransferencia);
+    }
+    
+    return true;
+  });
 
-      const mesTransferencia = parseInt(partes[1]) - 1;
-      const anoTransferencia = parseInt(partes[2]);
-
-      if (anoTransferencia !== anoFiltro) return false;
-
-      if (incluirMeses && mesesSelecionados.length > 0) {
-        return mesesSelecionados.includes(mesTransferencia);
-      }
-
-      return true;
+  // Se ordenarPorData for true, ordena cronologicamente (mais antigo primeiro)
+  if (ordenarPorData) {
+    resultado.sort((a, b) => {
+      const partesA = a.data.split('/');
+      const partesB = b.data.split('/');
+      
+      const dataA = new Date(
+        parseInt(partesA[2]), // ano
+        parseInt(partesA[1]) - 1, // mês
+        parseInt(partesA[0]) // dia
+      );
+      
+      const dataB = new Date(
+        parseInt(partesB[2]), // ano
+        parseInt(partesB[1]) - 1, // mês
+        parseInt(partesB[0]) // dia
+      );
+      
+      return dataA - dataB; // ordem crescente (mais antigo primeiro)
     });
-  };
-
-  const calcularTotal = (transferenciasFiltradas) => {
-    return transferenciasFiltradas.reduce((total, t) => {
-      const valor = parseFloat(t.valor.replace(/\./g, '').replace(',', '.'));
-      return total + valor;
-    }, 0);
-  };
-
-  const getDadosGraficoRosquinha = () => {
-    const transferenciasFiltradas = filtrarTransferencias(true, true);
-    const totais = { especie: 0, digital: 0 };
-
-    transferenciasFiltradas.forEach(t => {
-      const valor = parseFloat(t.valor.replace(/\./g, '').replace(',', '.'));
-      totais[t.tipo] += valor;
-    });
-
-    return [
-      { name: 'Em Espécie', value: totais.especie, color: CORES.especie },
-      { name: 'Digital', value: totais.digital, color: CORES.digital }
-    ].filter(item => item.value > 0);
-  };
-
-  const getDadosGraficoLinha = () => {
-    const dados = Array(12).fill(0).map((_, index) => ({
-      mes: mesesAbrev[index],
-      valor: 0
-    }));
-
-    transferencias.forEach(t => {
-      const partes = t.data.split('/');
-      if (partes.length === 3) {
-        const mesTransferencia = parseInt(partes[1]) - 1;
-        const anoTransferencia = parseInt(partes[2]);
-
-        if (anoTransferencia === anoFiltro) {
-          const valor = parseFloat(t.valor.replace(/\./g, '').replace(',', '.'));
-          dados[mesTransferencia].valor += valor;
-        }
-      }
-    });
-
-    return dados;
-  };
+  }
+  
+  return resultado;
+};
 
   const calcularMaximoGrafico = () => {
     const dados = getDadosGraficoLinha();
