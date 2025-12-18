@@ -619,7 +619,7 @@ const ControleTransferencias = () => {
 
   // TELA DE VISUALIZAÇÃO
   // Caso não seja nenhuma das anteriores, assume-se "visualizar" ou renderiza por padrão
-  const transferenciasFiltradas = filtrarTransferencias();
+  const transferenciasFiltradas = filtrarTransferencias(true, true);
   const anosDisponiveis = obterAnosDisponiveis();
   const dadosRosquinha = getDadosGraficoRosquinha();
   const dadosLinha = getDadosGraficoLinha();
