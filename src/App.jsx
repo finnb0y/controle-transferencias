@@ -602,7 +602,8 @@ const getDadosGraficoLinha = () => {
       const { error } = await supabase
         .from('treinos')
         .update(updateData)
-        .eq('id', treinoEditando.id);
+        .eq('id', treinoEditando.id)
+        .select();
 
       if (error) throw error;
 
