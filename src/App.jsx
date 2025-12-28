@@ -435,6 +435,29 @@ const getDadosGraficoLinha = () => {
   };
   
   // Funções para Treino
+  
+  // Helper function to convert form values to proper database types
+  const converterValoresTreino = (formulario) => {
+    // Convert duracao to integer or null, handling NaN cases
+    let duracaoValue = null;
+    if (formulario.duracao && String(formulario.duracao).trim() !== '') {
+      const parsed = parseInt(formulario.duracao, 10);
+      duracaoValue = isNaN(parsed) ? null : parsed;
+    }
+    
+    // Convert distancia to float or null, handling NaN cases
+    let distanciaValue = null;
+    if (formulario.distancia && String(formulario.distancia).trim() !== '') {
+      const parsed = parseFloat(formulario.distancia);
+      distanciaValue = isNaN(parsed) ? null : parsed;
+    }
+    
+    return {
+      duracao: duracaoValue,
+      distancia: distanciaValue
+    };
+  };
+  
   const getTreinosNaData = (dia, mes, ano) => {
     const dataFormatada = `${String(dia).padStart(2, '0')}/${String(mes + 1).padStart(2, '0')}/${ano}`;
     return treinos.filter(t => t.data === dataFormatada);
@@ -484,12 +507,15 @@ const getDadosGraficoLinha = () => {
     }
 
     try {
+      // Convert string values to proper types using helper function
+      const { duracao, distancia } = converterValoresTreino(formularioTreino);
+      
       const treinoData = {
         data: dataSelecionadaTreino,
         tipo: formularioTreino.tipo,
         subcategoria: formularioTreino.subcategoria,
-        duracao: formularioTreino.duracao || null,
-        distancia: formularioTreino.distancia || null,
+        duracao,
+        distancia,
         observacoes: formularioTreino.observacoes || null
       };
       
@@ -519,7 +545,8 @@ const getDadosGraficoLinha = () => {
       setExercicioAtual({ nome: '', repeticoes: '', duracao: '' });
     } catch (error) {
       console.error('Erro ao adicionar treino:', error);
-      mostrarBarraConfirmacao('Erro ao adicionar treino. Tente novamente.', 'error');
+      const errorMessage = error.message || 'Erro desconhecido';
+      mostrarBarraConfirmacao(`Erro ao adicionar treino: ${errorMessage}`, 'error');
     }
   };
   
@@ -553,11 +580,14 @@ const getDadosGraficoLinha = () => {
     }
     
     try {
+      // Convert string values to proper types using helper function
+      const { duracao, distancia } = converterValoresTreino(formularioTreino);
+      
       const updateData = {
         tipo: formularioTreino.tipo,
         subcategoria: formularioTreino.subcategoria,
-        duracao: formularioTreino.duracao || null,
-        distancia: formularioTreino.distancia || null,
+        duracao,
+        distancia,
         observacoes: formularioTreino.observacoes || null
       };
       
@@ -591,7 +621,8 @@ const getDadosGraficoLinha = () => {
       setExercicioAtual({ nome: '', repeticoes: '', duracao: '' });
     } catch (error) {
       console.error('Erro ao editar treino:', error);
-      mostrarBarraConfirmacao('Erro ao editar treino. Tente novamente.', 'error');
+      const errorMessage = error.message || 'Erro desconhecido';
+      mostrarBarraConfirmacao(`Erro ao editar treino: ${errorMessage}`, 'error');
     }
   };
   
