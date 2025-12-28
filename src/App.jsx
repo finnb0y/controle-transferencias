@@ -28,6 +28,14 @@ const ControleTransferencias = () => {
     distancia: '',
     observacoes: ''
   });
+  
+  // Estados para exercícios múltiplos (funcional training)
+  const [exercicios, setExercicios] = useState([]);
+  const [exercicioAtual, setExercicioAtual] = useState({
+    nome: '',
+    repeticoes: '',
+    duracao: ''
+  });
 
   const [formulario, setFormulario] = useState({
     valor: '',
@@ -437,6 +445,8 @@ const getDadosGraficoLinha = () => {
       distancia: '',
       observacoes: ''
     });
+    setExercicios([]);
+    setExercicioAtual({ nome: '', repeticoes: '', duracao: '' });
     setTreinoEditando(null);
   };
   
@@ -445,20 +455,31 @@ const getDadosGraficoLinha = () => {
       alert('Por favor, preencha o tipo e subcategoria do treino!');
       return;
     }
+    
+    // Se for funcional e não houver exercícios, alertar
+    if (formularioTreino.subcategoria === 'Funcional' && exercicios.length === 0) {
+      alert('Por favor, adicione pelo menos um exercício para o treino funcional!');
+      return;
+    }
 
     try {
+      const treinoData = {
+        data: dataSelecionadaTreino,
+        tipo: formularioTreino.tipo,
+        subcategoria: formularioTreino.subcategoria,
+        duracao: formularioTreino.duracao || null,
+        distancia: formularioTreino.distancia || null,
+        observacoes: formularioTreino.observacoes || null
+      };
+      
+      // Add exercises only if functional training
+      if (formularioTreino.subcategoria === 'Funcional') {
+        treinoData.exercicios = exercicios;
+      }
+
       const { data, error } = await supabase
         .from('treinos')
-        .insert([
-          {
-            data: dataSelecionadaTreino,
-            tipo: formularioTreino.tipo,
-            subcategoria: formularioTreino.subcategoria,
-            duracao: formularioTreino.duracao || null,
-            distancia: formularioTreino.distancia || null,
-            observacoes: formularioTreino.observacoes || null
-          }
-        ])
+        .insert([treinoData])
         .select();
 
       if (error) throw error;
@@ -473,6 +494,8 @@ const getDadosGraficoLinha = () => {
         distancia: '',
         observacoes: ''
       });
+      setExercicios([]);
+      setExercicioAtual({ nome: '', repeticoes: '', duracao: '' });
     } catch (error) {
       console.error('Erro ao adicionar treino:', error);
       alert('Erro ao adicionar treino. Tente novamente.');
@@ -489,22 +512,44 @@ const getDadosGraficoLinha = () => {
       distancia: treino.distancia || '',
       observacoes: treino.observacoes || ''
     });
+    // Load exercises if available
+    if (treino.exercicios && Array.isArray(treino.exercicios)) {
+      setExercicios(treino.exercicios);
+    } else {
+      setExercicios([]);
+    }
+    setExercicioAtual({ nome: '', repeticoes: '', duracao: '' });
     setMostrarFormularioTreino(true);
   };
   
   const salvarEdicaoTreino = async () => {
     if (!treinoEditando) return;
     
+    // Se for funcional e não houver exercícios, alertar
+    if (formularioTreino.subcategoria === 'Funcional' && exercicios.length === 0) {
+      alert('Por favor, adicione pelo menos um exercício para o treino funcional!');
+      return;
+    }
+    
     try {
+      const updateData = {
+        tipo: formularioTreino.tipo,
+        subcategoria: formularioTreino.subcategoria,
+        duracao: formularioTreino.duracao || null,
+        distancia: formularioTreino.distancia || null,
+        observacoes: formularioTreino.observacoes || null
+      };
+      
+      // Add exercises only if functional training
+      if (formularioTreino.subcategoria === 'Funcional') {
+        updateData.exercicios = exercicios;
+      } else {
+        updateData.exercicios = [];
+      }
+      
       const { error } = await supabase
         .from('treinos')
-        .update({
-          tipo: formularioTreino.tipo,
-          subcategoria: formularioTreino.subcategoria,
-          duracao: formularioTreino.duracao || null,
-          distancia: formularioTreino.distancia || null,
-          observacoes: formularioTreino.observacoes || null
-        })
+        .update(updateData)
         .eq('id', treinoEditando.id);
 
       if (error) throw error;
@@ -520,6 +565,8 @@ const getDadosGraficoLinha = () => {
         distancia: '',
         observacoes: ''
       });
+      setExercicios([]);
+      setExercicioAtual({ nome: '', repeticoes: '', duracao: '' });
     } catch (error) {
       console.error('Erro ao editar treino:', error);
       alert('Erro ao editar treino. Tente novamente.');
@@ -544,6 +591,26 @@ const getDadosGraficoLinha = () => {
       console.error('Erro ao excluir treino:', error);
       alert('Erro ao excluir treino. Tente novamente.');
     }
+  };
+  
+  // Funções para gerenciar exercícios múltiplos
+  const adicionarExercicio = () => {
+    if (!exercicioAtual.nome) {
+      alert('Por favor, preencha o nome do exercício!');
+      return;
+    }
+    
+    if (!exercicioAtual.repeticoes && !exercicioAtual.duracao) {
+      alert('Por favor, preencha as repetições ou a duração do exercício!');
+      return;
+    }
+    
+    setExercicios([...exercicios, exercicioAtual]);
+    setExercicioAtual({ nome: '', repeticoes: '', duracao: '' });
+  };
+  
+  const removerExercicio = (index) => {
+    setExercicios(exercicios.filter((_, i) => i !== index));
   };
 
   const baixarPlanilha = () => {
@@ -613,7 +680,7 @@ const getDadosGraficoLinha = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <button
               onClick={() => setTela('adicionar')}
-              className="bg-white rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all transform hover:scale-105 group"
+              className="bg-white rounded-3xl shadow-xl p-8 hover:shadow-2xl transition-all transform hover:scale-105 group"
             >
               <div className="flex flex-col items-center gap-4">
                 <div className="bg-blue-100 p-6 rounded-full group-hover:bg-blue-600 transition-colors">
@@ -628,7 +695,7 @@ const getDadosGraficoLinha = () => {
 
             <button
               onClick={() => setTela('visualizar')}
-              className="bg-white rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all transform hover:scale-105 group"
+              className="bg-white rounded-3xl shadow-xl p-8 hover:shadow-2xl transition-all transform hover:scale-105 group"
             >
               <div className="flex flex-col items-center gap-4">
                 <div className="bg-green-100 p-6 rounded-full group-hover:bg-green-600 transition-colors">
@@ -643,7 +710,7 @@ const getDadosGraficoLinha = () => {
             
             <button
               onClick={() => setTela('treino')}
-              className="bg-white rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all transform hover:scale-105 group"
+              className="bg-white rounded-3xl shadow-xl p-8 hover:shadow-2xl transition-all transform hover:scale-105 group"
             >
               <div className="flex flex-col items-center gap-4">
                 <div className="bg-purple-100 p-6 rounded-full group-hover:bg-purple-600 transition-colors">
@@ -670,7 +737,7 @@ const getDadosGraficoLinha = () => {
         <div className="max-w-6xl mx-auto">
           <button
             onClick={() => setTela('inicial')}
-            className="mb-6 flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow hover:shadow-md transition-all"
+            className="mb-6 flex items-center gap-2 bg-white px-6 py-3 rounded-full shadow hover:shadow-md transition-all"
           >
             <Home size={20} />
             Voltar para Início
@@ -809,7 +876,7 @@ const getDadosGraficoLinha = () => {
 
               <button
                 onClick={adicionarTransferencia}
-                className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-blue-700 transition-colors"
+                className="w-full bg-blue-600 text-white py-3 rounded-2xl font-bold text-lg hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl"
               >
                 Adicionar Transferência
               </button>
@@ -880,7 +947,7 @@ const getDadosGraficoLinha = () => {
         <div className="max-w-7xl mx-auto">
           <button
             onClick={() => setTela('inicial')}
-            className="mb-6 flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow hover:shadow-md transition-all"
+            className="mb-6 flex items-center gap-2 bg-white px-6 py-3 rounded-full shadow hover:shadow-md transition-all"
           >
             <Home size={20} />
             Voltar para Início
@@ -941,7 +1008,7 @@ const getDadosGraficoLinha = () => {
                     <button
                       key={dia}
                       onClick={() => selecionarDiaTreino(dia)}
-                      className={`h-24 rounded-lg border-2 transition-all hover:shadow-md flex flex-col items-center justify-start p-2
+                      className={`h-24 rounded-2xl border-2 transition-all hover:shadow-md flex flex-col items-center justify-start p-2
                         ${isHoje ? 'border-purple-600 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}
                         ${treinosDoDia.length > 0 ? 'bg-gradient-to-br from-purple-100 to-pink-100' : 'bg-white'}
                       `}
@@ -989,113 +1056,14 @@ const getDadosGraficoLinha = () => {
             </div>
           </div>
 
-          {/* Formulário de Treino */}
+          {/* Formulário de Treino como Overlay/Modal */}
           {mostrarFormularioTreino && (
-            <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">
-                {treinoEditando ? 'Editar Treino' : 'Adicionar Treino'}
-              </h2>
-              <p className="text-gray-600 mb-6">Data: {dataSelecionadaTreino}</p>
-
-              <div className="space-y-4">
-                {/* Tipo de Treino */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Tipo de Treino
-                  </label>
-                  <div className="grid grid-cols-2 gap-4">
-                    {Object.entries(TIPOS_TREINO).map(([key, tipo]) => (
-                      <button
-                        key={key}
-                        onClick={() => setFormularioTreino({ ...formularioTreino, tipo: key, subcategoria: '' })}
-                        className={`p-4 rounded-lg border-2 transition-all ${
-                          formularioTreino.tipo === key
-                            ? 'border-current shadow-md'
-                            : 'border-gray-300 hover:border-gray-400'
-                        }`}
-                        style={{
-                          color: formularioTreino.tipo === key ? tipo.cor : '#666',
-                          backgroundColor: formularioTreino.tipo === key ? `${tipo.cor}10` : 'white'
-                        }}
-                      >
-                        <span className="font-bold text-lg">{tipo.nome}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Subcategoria */}
-                {formularioTreino.tipo && (
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Subcategoria
-                    </label>
-                    <select
-                      value={formularioTreino.subcategoria}
-                      onChange={(e) => setFormularioTreino({ ...formularioTreino, subcategoria: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-lg"
-                    >
-                      <option value="">Selecione...</option>
-                      {TIPOS_TREINO[formularioTreino.tipo].subcategorias.map(sub => (
-                        <option key={sub} value={sub}>{sub}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* Duração e Distância */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Duração (minutos)
-                    </label>
-                    <input
-                      type="number"
-                      value={formularioTreino.duracao}
-                      onChange={(e) => setFormularioTreino({ ...formularioTreino, duracao: e.target.value })}
-                      placeholder="Ex: 45"
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-lg"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Distância (km)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={formularioTreino.distancia}
-                      onChange={(e) => setFormularioTreino({ ...formularioTreino, distancia: e.target.value })}
-                      placeholder="Ex: 5.5"
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-lg"
-                    />
-                  </div>
-                </div>
-
-                {/* Observações */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Observações (opcional)
-                  </label>
-                  <textarea
-                    value={formularioTreino.observacoes}
-                    onChange={(e) => setFormularioTreino({ ...formularioTreino, observacoes: e.target.value })}
-                    placeholder="Ex: Treino intenso, boa recuperação..."
-                    rows="3"
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-lg"
-                  />
-                </div>
-
-                {/* Botões */}
-                <div className="flex gap-3">
-                  <button
-                    onClick={treinoEditando ? salvarEdicaoTreino : adicionarTreino}
-                    className="flex-1 bg-purple-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Save size={20} />
-                    {treinoEditando ? 'Salvar Alterações' : 'Adicionar Treino'}
-                  </button>
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-3xl shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    {treinoEditando ? 'Editar Treino' : 'Adicionar Treino'}
+                  </h2>
                   <button
                     onClick={() => {
                       setMostrarFormularioTreino(false);
@@ -1107,11 +1075,223 @@ const getDadosGraficoLinha = () => {
                         distancia: '',
                         observacoes: ''
                       });
+                      setExercicios([]);
+                      setExercicioAtual({ nome: '', repeticoes: '', duracao: '' });
                     }}
-                    className="px-6 py-3 border-2 border-gray-300 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors"
+                    className="text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-full transition-colors"
                   >
-                    Cancelar
+                    <X size={24} />
                   </button>
+                </div>
+                <p className="text-gray-600 mb-6">Data: {dataSelecionadaTreino}</p>
+
+                <div className="space-y-4">
+                  {/* Tipo de Treino */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Tipo de Treino
+                    </label>
+                    <div className="grid grid-cols-2 gap-4">
+                      {Object.entries(TIPOS_TREINO).map(([key, tipo]) => (
+                        <button
+                          key={key}
+                          onClick={() => {
+                            setFormularioTreino({ ...formularioTreino, tipo: key, subcategoria: '' });
+                            setExercicios([]);
+                            setExercicioAtual({ nome: '', repeticoes: '', duracao: '' });
+                          }}
+                          className={`p-4 rounded-2xl border-2 transition-all ${
+                            formularioTreino.tipo === key
+                              ? 'border-current shadow-md'
+                              : 'border-gray-300 hover:border-gray-400'
+                          }`}
+                          style={{
+                            color: formularioTreino.tipo === key ? tipo.cor : '#666',
+                            backgroundColor: formularioTreino.tipo === key ? `${tipo.cor}10` : 'white'
+                          }}
+                        >
+                          <span className="font-bold text-lg">{tipo.nome}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Subcategoria */}
+                  {formularioTreino.tipo && (
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Subcategoria
+                      </label>
+                      <select
+                        value={formularioTreino.subcategoria}
+                        onChange={(e) => setFormularioTreino({ ...formularioTreino, subcategoria: e.target.value })}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none text-lg"
+                      >
+                        <option value="">Selecione...</option>
+                        {TIPOS_TREINO[formularioTreino.tipo].subcategorias.map(sub => (
+                          <option key={sub} value={sub}>{sub}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Seção de Exercícios Múltiplos para Funcional */}
+                  {formularioTreino.subcategoria === 'Funcional' && (
+                    <div className="bg-purple-50 p-4 rounded-xl border-2 border-purple-200">
+                      <h3 className="text-lg font-bold text-gray-800 mb-3">Exercícios</h3>
+                      
+                      {/* Lista de exercícios adicionados */}
+                      {exercicios.length > 0 && (
+                        <div className="space-y-2 mb-4">
+                          {exercicios.map((ex, index) => (
+                            <div key={index} className="bg-white p-3 rounded-lg flex justify-between items-center">
+                              <div>
+                                <span className="font-semibold text-gray-800">{ex.nome}</span>
+                                <span className="text-sm text-gray-600 ml-2">
+                                  {ex.repeticoes && `${ex.repeticoes} reps`}
+                                  {ex.repeticoes && ex.duracao && ' | '}
+                                  {ex.duracao && `${ex.duracao} seg`}
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => removerExercicio(index)}
+                                className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-50"
+                              >
+                                <X size={18} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Formulário para adicionar novo exercício */}
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-1">
+                            Nome do Exercício
+                          </label>
+                          <input
+                            type="text"
+                            value={exercicioAtual.nome}
+                            onChange={(e) => setExercicioAtual({ ...exercicioAtual, nome: e.target.value })}
+                            placeholder="Ex: Prancha, Abdominais..."
+                            className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">
+                              Repetições
+                            </label>
+                            <input
+                              type="number"
+                              value={exercicioAtual.repeticoes}
+                              onChange={(e) => setExercicioAtual({ ...exercicioAtual, repeticoes: e.target.value })}
+                              placeholder="Ex: 15"
+                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">
+                              Duração (segundos)
+                            </label>
+                            <input
+                              type="number"
+                              value={exercicioAtual.duracao}
+                              onChange={(e) => setExercicioAtual({ ...exercicioAtual, duracao: e.target.value })}
+                              placeholder="Ex: 60"
+                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                        
+                        <button
+                          onClick={adicionarExercicio}
+                          className="w-full bg-purple-600 text-white py-2 rounded-xl font-semibold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Plus size={18} />
+                          Adicionar Exercício
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Duração e Distância - Não mostrar para funcional */}
+                  {formularioTreino.subcategoria && formularioTreino.subcategoria !== 'Funcional' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Duração (minutos)
+                        </label>
+                        <input
+                          type="number"
+                          value={formularioTreino.duracao}
+                          onChange={(e) => setFormularioTreino({ ...formularioTreino, duracao: e.target.value })}
+                          placeholder="Ex: 45"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none text-lg"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Distância (km)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={formularioTreino.distancia}
+                          onChange={(e) => setFormularioTreino({ ...formularioTreino, distancia: e.target.value })}
+                          placeholder="Ex: 5.5"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none text-lg"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Observações */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Observações (opcional)
+                    </label>
+                    <textarea
+                      value={formularioTreino.observacoes}
+                      onChange={(e) => setFormularioTreino({ ...formularioTreino, observacoes: e.target.value })}
+                      placeholder="Ex: Treino intenso, boa recuperação..."
+                      rows="3"
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none text-lg"
+                    />
+                  </div>
+
+                  {/* Botões */}
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={treinoEditando ? salvarEdicaoTreino : adicionarTreino}
+                      className="flex-1 bg-purple-600 text-white py-3 rounded-2xl font-bold text-lg hover:bg-purple-700 transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                    >
+                      <Save size={20} />
+                      {treinoEditando ? 'Salvar Alterações' : 'Adicionar Treino'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMostrarFormularioTreino(false);
+                        setTreinoEditando(null);
+                        setFormularioTreino({
+                          tipo: '',
+                          subcategoria: '',
+                          duracao: '',
+                          distancia: '',
+                          observacoes: ''
+                        });
+                        setExercicios([]);
+                        setExercicioAtual({ nome: '', repeticoes: '', duracao: '' });
+                      }}
+                      className="px-6 py-3 border-2 border-gray-300 rounded-2xl font-bold text-lg hover:bg-gray-100 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1139,7 +1319,7 @@ const getDadosGraficoLinha = () => {
                   ).map((treino) => (
                     <div
                       key={treino.id}
-                      className="border-2 border-gray-200 rounded-lg p-4 hover:shadow-md transition-all"
+                      className="border-2 border-gray-200 rounded-xl p-4 hover:shadow-md transition-all"
                       style={{ borderLeftWidth: '6px', borderLeftColor: TIPOS_TREINO[treino.tipo]?.cor }}
                     >
                       <div className="flex justify-between items-start">
@@ -1150,6 +1330,27 @@ const getDadosGraficoLinha = () => {
                           <p className="text-sm text-gray-600 mb-2">
                             Tipo: <span className="font-semibold">{TIPOS_TREINO[treino.tipo]?.nome}</span>
                           </p>
+                          
+                          {/* Display exercises for functional training */}
+                          {treino.subcategoria === 'Funcional' && treino.exercicios && treino.exercicios.length > 0 && (
+                            <div className="mt-3 bg-purple-50 p-3 rounded-lg">
+                              <p className="text-sm font-semibold text-gray-700 mb-2">Exercícios:</p>
+                              <ul className="space-y-1">
+                                {treino.exercicios.map((ex, idx) => (
+                                  <li key={idx} className="text-sm text-gray-700 flex items-center gap-2">
+                                    <Check size={14} className="text-purple-600" />
+                                    <span className="font-medium">{ex.nome}</span>
+                                    <span className="text-gray-600">
+                                      {ex.repeticoes && `${ex.repeticoes} reps`}
+                                      {ex.repeticoes && ex.duracao && ' | '}
+                                      {ex.duracao && `${ex.duracao} seg`}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          
                           {treino.duracao && (
                             <p className="text-sm text-gray-600">
                               Duração: <span className="font-semibold">{treino.duracao} minutos</span>
@@ -1196,9 +1397,11 @@ const getDadosGraficoLinha = () => {
                     distancia: '',
                     observacoes: ''
                   });
+                  setExercicios([]);
+                  setExercicioAtual({ nome: '', repeticoes: '', duracao: '' });
                   setTreinoEditando(null);
                 }}
-                className="w-full mt-6 bg-purple-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                className="w-full mt-6 bg-purple-600 text-white py-3 rounded-2xl font-bold text-lg hover:bg-purple-700 transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
               >
                 <Plus size={20} />
                 Adicionar Mais um Treino
@@ -1223,7 +1426,7 @@ const getDadosGraficoLinha = () => {
       <div className="max-w-7xl mx-auto">
         <button
           onClick={() => setTela('inicial')}
-          className="mb-6 flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow hover:shadow-md transition-all"
+          className="mb-6 flex items-center gap-2 bg-white px-6 py-3 rounded-full shadow hover:shadow-md transition-all"
         >
           <Home size={20} />
           Voltar para Início
@@ -1239,7 +1442,7 @@ const getDadosGraficoLinha = () => {
 
             <button
               onClick={baixarPlanilha}
-              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+              className="flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-2xl font-semibold hover:bg-green-700 transition-colors shadow-lg hover:shadow-xl"
             >
               <Download size={20} />
               Baixar Planilha
@@ -1301,7 +1504,7 @@ const getDadosGraficoLinha = () => {
                     <div key={index} className="relative">
                       <button
                         onClick={() => toggleMes(index)}
-                        className={`w-full py-2 px-3 rounded-lg font-semibold text-sm transition-all ${selecionado
+                        className={`w-full py-2 px-3 rounded-2xl font-semibold text-sm transition-all ${selecionado
                             ? 'bg-blue-600 text-white shadow-md'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                           }`}
