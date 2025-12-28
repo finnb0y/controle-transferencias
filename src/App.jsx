@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, DollarSign, X, Download, Filter, PieChart, TrendingUp, Home, Plus, Eye } from 'lucide-react';
+import { Calendar, DollarSign, X, Download, Filter, PieChart, TrendingUp, Home, Plus, Eye, Dumbbell, Check, Edit2, Save } from 'lucide-react';
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { supabase } from './supabaseClient';
 
@@ -11,6 +11,23 @@ const ControleTransferencias = () => {
   const [mostrarAnos, setMostrarAnos] = useState(false);
   const [mesesSelecionados, setMesesSelecionados] = useState([]);
   const [anoFiltro, setAnoFiltro] = useState(new Date().getFullYear());
+  
+  // Estados para Treino
+  const [treinos, setTreinos] = useState([]);
+  const [calendarioTreino, setCalendarioTreino] = useState({
+    mes: new Date().getMonth(),
+    ano: new Date().getFullYear()
+  });
+  const [dataSelecionadaTreino, setDataSelecionadaTreino] = useState(null);
+  const [mostrarFormularioTreino, setMostrarFormularioTreino] = useState(false);
+  const [treinoEditando, setTreinoEditando] = useState(null);
+  const [formularioTreino, setFormularioTreino] = useState({
+    tipo: '',
+    subcategoria: '',
+    duracao: '',
+    distancia: '',
+    observacoes: ''
+  });
 
   const [formulario, setFormulario] = useState({
     valor: '',
@@ -37,9 +54,24 @@ const ControleTransferencias = () => {
     especie: '#f59e0b',
     digital: '#3b82f6'
   };
+  
+  // Tipos de treino e subcategorias
+  const TIPOS_TREINO = {
+    cardio: {
+      nome: 'Cardio',
+      cor: '#ef4444', // vermelho
+      subcategorias: ['Caminhada', 'Corrida', 'Natação', 'Ciclismo', 'Elíptico']
+    },
+    intensidade: {
+      nome: 'Intensidade',
+      cor: '#8b5cf6', // roxo
+      subcategorias: ['Musculação', 'CrossFit', 'HIIT', 'Funcional', 'Calistenia']
+    }
+  };
 
   useEffect(() => {
     carregarDados();
+    carregarTreinos();
   }, []);
 
   const carregarDados = async () => {
@@ -67,6 +99,27 @@ const ControleTransferencias = () => {
       alert('Erro ao carregar transferências. Verifique sua conexão.');
     } finally {
       setCarregando(false);
+    }
+  };
+  
+  const carregarTreinos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('treinos')
+        .select('*')
+        .order('data', { ascending: false });
+
+      if (error) {
+        // Se a tabela não existe, silenciosamente retorna array vazio
+        console.log('Tabela treinos não encontrada ou erro:', error);
+        setTreinos([]);
+        return;
+      }
+
+      setTreinos(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar treinos:', error);
+      setTreinos([]);
     }
   };
 
@@ -351,6 +404,147 @@ const getDadosGraficoLinha = () => {
     const multiplo = Math.ceil(maxValor / 1000) * 1000;
     return multiplo;
   };
+  
+  // Funções para Treino
+  const getTreinosNaData = (dia, mes, ano) => {
+    const dataFormatada = `${String(dia).padStart(2, '0')}/${String(mes + 1).padStart(2, '0')}/${ano}`;
+    return treinos.filter(t => t.data === dataFormatada);
+  };
+  
+  const mudarMesTreino = (direcao) => {
+    let novoMes = calendarioTreino.mes + direcao;
+    let novoAno = calendarioTreino.ano;
+
+    if (novoMes > 11) {
+      novoMes = 0;
+      novoAno++;
+    } else if (novoMes < 0) {
+      novoMes = 11;
+      novoAno--;
+    }
+
+    setCalendarioTreino({ mes: novoMes, ano: novoAno });
+  };
+  
+  const selecionarDiaTreino = (dia) => {
+    const dataFormatada = `${String(dia).padStart(2, '0')}/${String(calendarioTreino.mes + 1).padStart(2, '0')}/${calendarioTreino.ano}`;
+    setDataSelecionadaTreino(dataFormatada);
+    setMostrarFormularioTreino(true);
+    setFormularioTreino({
+      tipo: '',
+      subcategoria: '',
+      duracao: '',
+      distancia: '',
+      observacoes: ''
+    });
+    setTreinoEditando(null);
+  };
+  
+  const adicionarTreino = async () => {
+    if (!dataSelecionadaTreino || !formularioTreino.tipo || !formularioTreino.subcategoria) {
+      alert('Por favor, preencha o tipo e subcategoria do treino!');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('treinos')
+        .insert([
+          {
+            data: dataSelecionadaTreino,
+            tipo: formularioTreino.tipo,
+            subcategoria: formularioTreino.subcategoria,
+            duracao: formularioTreino.duracao || null,
+            distancia: formularioTreino.distancia || null,
+            observacoes: formularioTreino.observacoes || null
+          }
+        ])
+        .select();
+
+      if (error) throw error;
+
+      alert('Treino adicionado com sucesso!');
+      await carregarTreinos();
+      setMostrarFormularioTreino(false);
+      setFormularioTreino({
+        tipo: '',
+        subcategoria: '',
+        duracao: '',
+        distancia: '',
+        observacoes: ''
+      });
+    } catch (error) {
+      console.error('Erro ao adicionar treino:', error);
+      alert('Erro ao adicionar treino. Tente novamente.');
+    }
+  };
+  
+  const editarTreino = (treino) => {
+    setTreinoEditando(treino);
+    setDataSelecionadaTreino(treino.data);
+    setFormularioTreino({
+      tipo: treino.tipo,
+      subcategoria: treino.subcategoria,
+      duracao: treino.duracao || '',
+      distancia: treino.distancia || '',
+      observacoes: treino.observacoes || ''
+    });
+    setMostrarFormularioTreino(true);
+  };
+  
+  const salvarEdicaoTreino = async () => {
+    if (!treinoEditando) return;
+    
+    try {
+      const { error } = await supabase
+        .from('treinos')
+        .update({
+          tipo: formularioTreino.tipo,
+          subcategoria: formularioTreino.subcategoria,
+          duracao: formularioTreino.duracao || null,
+          distancia: formularioTreino.distancia || null,
+          observacoes: formularioTreino.observacoes || null
+        })
+        .eq('id', treinoEditando.id);
+
+      if (error) throw error;
+
+      alert('Treino atualizado com sucesso!');
+      await carregarTreinos();
+      setMostrarFormularioTreino(false);
+      setTreinoEditando(null);
+      setFormularioTreino({
+        tipo: '',
+        subcategoria: '',
+        duracao: '',
+        distancia: '',
+        observacoes: ''
+      });
+    } catch (error) {
+      console.error('Erro ao editar treino:', error);
+      alert('Erro ao editar treino. Tente novamente.');
+    }
+  };
+  
+  const excluirTreino = async (id) => {
+    if (!confirm('Tem certeza que deseja excluir este treino?')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('treinos')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      await carregarTreinos();
+    } catch (error) {
+      console.error('Erro ao excluir treino:', error);
+      alert('Erro ao excluir treino. Tente novamente.');
+    }
+  };
 
   const baixarPlanilha = () => {
     const transferenciasFiltradas = filtrarTransferencias();
@@ -411,12 +605,12 @@ const getDadosGraficoLinha = () => {
           <div className="text-center mb-12">
             <h1 className="text-5xl font-bold text-gray-800 mb-4 flex items-center justify-center gap-4">
               <DollarSign className="text-blue-600" size={56} />
-              Controle de Transferências
+              Hub de Funções
             </h1>
             <p className="text-xl text-gray-600">Escolha uma opção para começar</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <button
               onClick={() => setTela('adicionar')}
               className="bg-white rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all transform hover:scale-105 group"
@@ -443,6 +637,21 @@ const getDadosGraficoLinha = () => {
                 <h2 className="text-2xl font-bold text-gray-800">Visualizar Histórico</h2>
                 <p className="text-gray-600 text-center">
                   Veja gráficos, relatórios e exporte planilhas
+                </p>
+              </div>
+            </button>
+            
+            <button
+              onClick={() => setTela('treino')}
+              className="bg-white rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all transform hover:scale-105 group"
+            >
+              <div className="flex flex-col items-center gap-4">
+                <div className="bg-purple-100 p-6 rounded-full group-hover:bg-purple-600 transition-colors">
+                  <Dumbbell className="text-purple-600 group-hover:text-white transition-colors" size={48} />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800">Treino</h2>
+                <p className="text-gray-600 text-center">
+                  Acompanhe seus treinos com calendário interativo
                 </p>
               </div>
             </button>
@@ -656,6 +865,346 @@ const getDadosGraficoLinha = () => {
               </div>
             )}
           </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // TELA DE TREINO
+  if (tela === 'treino') {
+    const diasNoMes = getDiasNoMes(calendarioTreino.mes, calendarioTreino.ano);
+    const primeiroDia = getPrimeiroDiaSemana(calendarioTreino.mes, calendarioTreino.ano);
+    
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-4">
+        <div className="max-w-7xl mx-auto">
+          <button
+            onClick={() => setTela('inicial')}
+            className="mb-6 flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow hover:shadow-md transition-all"
+          >
+            <Home size={20} />
+            Voltar para Início
+          </button>
+
+          <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
+            <h1 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+              <Dumbbell className="text-purple-600" size={36} />
+              Calendário de Treinos
+            </h1>
+
+            {/* Calendário */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-6">
+                <button
+                  onClick={() => mudarMesTreino(-1)}
+                  className="p-3 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <span className="text-2xl">←</span>
+                </button>
+
+                <h2 className="text-2xl font-bold text-gray-800">
+                  {meses[calendarioTreino.mes]} {calendarioTreino.ano}
+                </h2>
+
+                <button
+                  onClick={() => mudarMesTreino(1)}
+                  className="p-3 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <span className="text-2xl">→</span>
+                </button>
+              </div>
+
+              {/* Grid do calendário */}
+              <div className="grid grid-cols-7 gap-2 mb-2">
+                {diasSemana.map(dia => (
+                  <div key={dia} className="text-center text-sm font-bold text-gray-600 py-2">
+                    {dia}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7 gap-2">
+                {/* Dias vazios antes do início do mês */}
+                {Array.from({ length: primeiroDia }).map((_, i) => (
+                  <div key={`vazio-${i}`} className="h-24"></div>
+                ))}
+                
+                {/* Dias do mês */}
+                {Array.from({ length: diasNoMes }).map((_, index) => {
+                  const dia = index + 1;
+                  const treinosDoDia = getTreinosNaData(dia, calendarioTreino.mes, calendarioTreino.ano);
+                  const isHoje = dia === new Date().getDate() &&
+                    calendarioTreino.mes === new Date().getMonth() &&
+                    calendarioTreino.ano === new Date().getFullYear();
+
+                  return (
+                    <button
+                      key={dia}
+                      onClick={() => selecionarDiaTreino(dia)}
+                      className={`h-24 rounded-lg border-2 transition-all hover:shadow-md flex flex-col items-center justify-start p-2
+                        ${isHoje ? 'border-purple-600 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}
+                        ${treinosDoDia.length > 0 ? 'bg-gradient-to-br from-purple-100 to-pink-100' : 'bg-white'}
+                      `}
+                    >
+                      <span className={`text-lg font-semibold mb-1 ${isHoje ? 'text-purple-600' : 'text-gray-700'}`}>
+                        {dia}
+                      </span>
+                      
+                      {treinosDoDia.length > 0 && (
+                        <div className="flex flex-col gap-1 w-full">
+                          {treinosDoDia.slice(0, 2).map((treino, idx) => (
+                            <div 
+                              key={idx}
+                              className="flex items-center justify-center gap-1 text-xs"
+                              style={{ color: TIPOS_TREINO[treino.tipo]?.cor || '#666' }}
+                            >
+                              <Check size={12} />
+                              <span className="truncate font-medium">{treino.subcategoria}</span>
+                            </div>
+                          ))}
+                          {treinosDoDia.length > 2 && (
+                            <span className="text-xs text-gray-500 font-semibold">
+                              +{treinosDoDia.length - 2}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            
+            {/* Legenda */}
+            <div className="flex gap-6 justify-center mt-6 p-4 bg-gray-50 rounded-lg">
+              {Object.entries(TIPOS_TREINO).map(([key, tipo]) => (
+                <div key={key} className="flex items-center gap-2">
+                  <div 
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: tipo.cor }}
+                  ></div>
+                  <span className="text-sm font-semibold text-gray-700">{tipo.nome}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Formulário de Treino */}
+          {mostrarFormularioTreino && (
+            <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                {treinoEditando ? 'Editar Treino' : 'Adicionar Treino'}
+              </h2>
+              <p className="text-gray-600 mb-6">Data: {dataSelecionadaTreino}</p>
+
+              <div className="space-y-4">
+                {/* Tipo de Treino */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Tipo de Treino
+                  </label>
+                  <div className="grid grid-cols-2 gap-4">
+                    {Object.entries(TIPOS_TREINO).map(([key, tipo]) => (
+                      <button
+                        key={key}
+                        onClick={() => setFormularioTreino({ ...formularioTreino, tipo: key, subcategoria: '' })}
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          formularioTreino.tipo === key
+                            ? 'border-current shadow-md'
+                            : 'border-gray-300 hover:border-gray-400'
+                        }`}
+                        style={{
+                          color: formularioTreino.tipo === key ? tipo.cor : '#666',
+                          backgroundColor: formularioTreino.tipo === key ? `${tipo.cor}10` : 'white'
+                        }}
+                      >
+                        <span className="font-bold text-lg">{tipo.nome}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Subcategoria */}
+                {formularioTreino.tipo && (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Subcategoria
+                    </label>
+                    <select
+                      value={formularioTreino.subcategoria}
+                      onChange={(e) => setFormularioTreino({ ...formularioTreino, subcategoria: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-lg"
+                    >
+                      <option value="">Selecione...</option>
+                      {TIPOS_TREINO[formularioTreino.tipo].subcategorias.map(sub => (
+                        <option key={sub} value={sub}>{sub}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Duração e Distância */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Duração (minutos)
+                    </label>
+                    <input
+                      type="number"
+                      value={formularioTreino.duracao}
+                      onChange={(e) => setFormularioTreino({ ...formularioTreino, duracao: e.target.value })}
+                      placeholder="Ex: 45"
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-lg"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Distância (km)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={formularioTreino.distancia}
+                      onChange={(e) => setFormularioTreino({ ...formularioTreino, distancia: e.target.value })}
+                      placeholder="Ex: 5.5"
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-lg"
+                    />
+                  </div>
+                </div>
+
+                {/* Observações */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Observações (opcional)
+                  </label>
+                  <textarea
+                    value={formularioTreino.observacoes}
+                    onChange={(e) => setFormularioTreino({ ...formularioTreino, observacoes: e.target.value })}
+                    placeholder="Ex: Treino intenso, boa recuperação..."
+                    rows="3"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-lg"
+                  />
+                </div>
+
+                {/* Botões */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={treinoEditando ? salvarEdicaoTreino : adicionarTreino}
+                    className="flex-1 bg-purple-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Save size={20} />
+                    {treinoEditando ? 'Salvar Alterações' : 'Adicionar Treino'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMostrarFormularioTreino(false);
+                      setTreinoEditando(null);
+                      setFormularioTreino({
+                        tipo: '',
+                        subcategoria: '',
+                        duracao: '',
+                        distancia: '',
+                        observacoes: ''
+                      });
+                    }}
+                    className="px-6 py-3 border-2 border-gray-300 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Lista de Treinos do Dia Selecionado */}
+          {dataSelecionadaTreino && !mostrarFormularioTreino && (
+            <div className="bg-white rounded-2xl shadow-xl p-6">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                Treinos de {dataSelecionadaTreino}
+              </h2>
+              
+              {getTreinosNaData(
+                parseInt(dataSelecionadaTreino.split('/')[0]),
+                parseInt(dataSelecionadaTreino.split('/')[1]) - 1,
+                parseInt(dataSelecionadaTreino.split('/')[2])
+              ).length === 0 ? (
+                <p className="text-center text-gray-500 py-8">Nenhum treino registrado neste dia.</p>
+              ) : (
+                <div className="space-y-4">
+                  {getTreinosNaData(
+                    parseInt(dataSelecionadaTreino.split('/')[0]),
+                    parseInt(dataSelecionadaTreino.split('/')[1]) - 1,
+                    parseInt(dataSelecionadaTreino.split('/')[2])
+                  ).map((treino) => (
+                    <div
+                      key={treino.id}
+                      className="border-2 border-gray-200 rounded-lg p-4 hover:shadow-md transition-all"
+                      style={{ borderLeftWidth: '6px', borderLeftColor: TIPOS_TREINO[treino.tipo]?.cor }}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="text-xl font-bold text-gray-800 mb-2">
+                            {treino.subcategoria}
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-2">
+                            Tipo: <span className="font-semibold">{TIPOS_TREINO[treino.tipo]?.nome}</span>
+                          </p>
+                          {treino.duracao && (
+                            <p className="text-sm text-gray-600">
+                              Duração: <span className="font-semibold">{treino.duracao} minutos</span>
+                            </p>
+                          )}
+                          {treino.distancia && (
+                            <p className="text-sm text-gray-600">
+                              Distância: <span className="font-semibold">{treino.distancia} km</span>
+                            </p>
+                          )}
+                          {treino.observacoes && (
+                            <p className="text-sm text-gray-600 mt-2">
+                              <span className="font-semibold">Obs:</span> {treino.observacoes}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => editarTreino(treino)}
+                            className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded-full transition-colors"
+                          >
+                            <Edit2 size={20} />
+                          </button>
+                          <button
+                            onClick={() => excluirTreino(treino.id)}
+                            className="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded-full transition-colors"
+                          >
+                            <X size={20} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <button
+                onClick={() => {
+                  setMostrarFormularioTreino(true);
+                  setFormularioTreino({
+                    tipo: '',
+                    subcategoria: '',
+                    duracao: '',
+                    distancia: '',
+                    observacoes: ''
+                  });
+                  setTreinoEditando(null);
+                }}
+                className="w-full mt-6 bg-purple-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <Plus size={20} />
+                Adicionar Mais um Treino
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
