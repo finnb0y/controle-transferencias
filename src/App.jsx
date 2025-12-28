@@ -637,6 +637,20 @@ const getDadosGraficoLinha = () => {
     setExercicios(exercicios.filter((_, i) => i !== index));
   };
   
+  // Handler para mudança de tipo de treino
+  const handleMudarTipoTreino = async (novoTipo) => {
+    // Avisar se estiver mudando de funcional com exercícios
+    if (formularioTreino.subcategoria === 'Funcional' && exercicios.length > 0 && novoTipo !== formularioTreino.tipo) {
+      const confirmado = await mostrarModalConfirmacaoFn('Mudar o tipo de treino removerá os exercícios adicionados. Deseja continuar?');
+      if (!confirmado) {
+        return;
+      }
+    }
+    setFormularioTreino({ ...formularioTreino, tipo: novoTipo, subcategoria: '' });
+    setExercicios([]);
+    setExercicioAtual({ nome: '', repeticoes: '', duracao: '' });
+  };
+  
   // Função para mostrar barra de confirmação
   const mostrarBarraConfirmacao = (mensagem, tipo = 'success') => {
     // Limpar timer anterior se existir
@@ -667,7 +681,7 @@ const getDadosGraficoLinha = () => {
   const mostrarModalConfirmacaoFn = (mensagem) => {
     return new Promise((resolve) => {
       setMensagemModalConfirmacao(mensagem);
-      setCallbackConfirmacao(() => resolve);
+      setCallbackConfirmacao(() => (result) => resolve(result));
       setMostrarModalConfirmacao(true);
     });
   };
@@ -685,6 +699,61 @@ const getDadosGraficoLinha = () => {
       callbackConfirmacao(false);
     }
   };
+  
+  // Renderiza componentes de notificação e confirmação
+  const renderNotificacoes = () => (
+    <>
+      {/* Barra de Confirmação */}
+      {mostrarConfirmacao && (
+        <div className={`fixed bottom-0 left-0 right-0 bg-white shadow-2xl border-t-4 p-4 flex items-center justify-between z-50 animate-slide-up ${
+          tipoConfirmacao === 'success' ? 'border-green-500' :
+          tipoConfirmacao === 'error' ? 'border-red-500' :
+          tipoConfirmacao === 'warning' ? 'border-yellow-500' :
+          'border-blue-500'
+        }`}>
+          <div className="flex-1">
+            <p className="text-gray-800 font-semibold">{mensagemConfirmacao}</p>
+            <div className={`absolute top-0 left-0 right-0 h-1 animate-shrink-width ${
+              tipoConfirmacao === 'success' ? 'bg-green-500' :
+              tipoConfirmacao === 'error' ? 'bg-red-500' :
+              tipoConfirmacao === 'warning' ? 'bg-yellow-500' :
+              'bg-blue-500'
+            }`}></div>
+          </div>
+          <button
+            onClick={fecharBarraConfirmacao}
+            className="ml-4 text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+      )}
+      
+      {/* Modal de Confirmação */}
+      {mostrarModalConfirmacao && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Confirmação</h3>
+            <p className="text-gray-700 mb-6">{mensagemModalConfirmacao}</p>
+            <div className="flex gap-3">
+              <button
+                onClick={confirmarAcao}
+                className="flex-1 bg-red-600 text-white py-3 rounded-2xl font-bold hover:bg-red-700 transition-colors"
+              >
+                Confirmar
+              </button>
+              <button
+                onClick={cancelarAcao}
+                className="flex-1 border-2 border-gray-300 py-3 rounded-2xl font-bold hover:bg-gray-100 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 
   const baixarPlanilha = () => {
     const transferenciasFiltradas = filtrarTransferencias();
@@ -798,55 +867,7 @@ const getDadosGraficoLinha = () => {
           </div>
         </div>
         
-        {/* Barra de Confirmação */}
-        {mostrarConfirmacao && (
-          <div className={`fixed bottom-0 left-0 right-0 bg-white shadow-2xl border-t-4 p-4 flex items-center justify-between z-50 animate-slide-up ${
-            tipoConfirmacao === 'success' ? 'border-green-500' :
-            tipoConfirmacao === 'error' ? 'border-red-500' :
-            tipoConfirmacao === 'warning' ? 'border-yellow-500' :
-            'border-blue-500'
-          }`}>
-            <div className="flex-1">
-              <p className="text-gray-800 font-semibold">{mensagemConfirmacao}</p>
-              <div className={`absolute top-0 left-0 right-0 h-1 animate-shrink-width ${
-                tipoConfirmacao === 'success' ? 'bg-green-500' :
-                tipoConfirmacao === 'error' ? 'bg-red-500' :
-                tipoConfirmacao === 'warning' ? 'bg-yellow-500' :
-                'bg-blue-500'
-              }`}></div>
-            </div>
-            <button
-              onClick={fecharBarraConfirmacao}
-              className="ml-4 text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <X size={20} />
-            </button>
-          </div>
-        )}
-        
-        {/* Modal de Confirmação */}
-        {mostrarModalConfirmacao && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-3xl shadow-2xl p-6 max-w-md w-full">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Confirmação</h3>
-              <p className="text-gray-700 mb-6">{mensagemModalConfirmacao}</p>
-              <div className="flex gap-3">
-                <button
-                  onClick={confirmarAcao}
-                  className="flex-1 bg-red-600 text-white py-3 rounded-2xl font-bold hover:bg-red-700 transition-colors"
-                >
-                  Confirmar
-                </button>
-                <button
-                  onClick={cancelarAcao}
-                  className="flex-1 border-2 border-gray-300 py-3 rounded-2xl font-bold hover:bg-gray-100 transition-colors"
-                >
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {renderNotificacoes()}
       </div>
     );
   }
@@ -1057,55 +1078,7 @@ const getDadosGraficoLinha = () => {
           </div>
         </div>
         
-        {/* Barra de Confirmação */}
-        {mostrarConfirmacao && (
-          <div className={`fixed bottom-0 left-0 right-0 bg-white shadow-2xl border-t-4 p-4 flex items-center justify-between z-50 animate-slide-up ${
-            tipoConfirmacao === 'success' ? 'border-green-500' :
-            tipoConfirmacao === 'error' ? 'border-red-500' :
-            tipoConfirmacao === 'warning' ? 'border-yellow-500' :
-            'border-blue-500'
-          }`}>
-            <div className="flex-1">
-              <p className="text-gray-800 font-semibold">{mensagemConfirmacao}</p>
-              <div className={`absolute top-0 left-0 right-0 h-1 animate-shrink-width ${
-                tipoConfirmacao === 'success' ? 'bg-green-500' :
-                tipoConfirmacao === 'error' ? 'bg-red-500' :
-                tipoConfirmacao === 'warning' ? 'bg-yellow-500' :
-                'bg-blue-500'
-              }`}></div>
-            </div>
-            <button
-              onClick={fecharBarraConfirmacao}
-              className="ml-4 text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <X size={20} />
-            </button>
-          </div>
-        )}
-        
-        {/* Modal de Confirmação */}
-        {mostrarModalConfirmacao && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-3xl shadow-2xl p-6 max-w-md w-full">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Confirmação</h3>
-              <p className="text-gray-700 mb-6">{mensagemModalConfirmacao}</p>
-              <div className="flex gap-3">
-                <button
-                  onClick={confirmarAcao}
-                  className="flex-1 bg-red-600 text-white py-3 rounded-2xl font-bold hover:bg-red-700 transition-colors"
-                >
-                  Confirmar
-                </button>
-                <button
-                  onClick={cancelarAcao}
-                  className="flex-1 border-2 border-gray-300 py-3 rounded-2xl font-bold hover:bg-gray-100 transition-colors"
-                >
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {renderNotificacoes()}
       </div>
     );
   }
@@ -1269,18 +1242,7 @@ const getDadosGraficoLinha = () => {
                       {Object.entries(TIPOS_TREINO).map(([key, tipo]) => (
                         <button
                           key={key}
-                          onClick={async () => {
-                            // Warn if changing from functional with exercises
-                            if (formularioTreino.subcategoria === 'Funcional' && exercicios.length > 0 && key !== formularioTreino.tipo) {
-                              const confirmado = await mostrarModalConfirmacaoFn('Mudar o tipo de treino removerá os exercícios adicionados. Deseja continuar?');
-                              if (!confirmado) {
-                                return;
-                              }
-                            }
-                            setFormularioTreino({ ...formularioTreino, tipo: key, subcategoria: '' });
-                            setExercicios([]);
-                            setExercicioAtual({ nome: '', repeticoes: '', duracao: '' });
-                          }}
+                          onClick={() => handleMudarTipoTreino(key)}
                           className={`p-4 rounded-2xl border-2 transition-all ${
                             formularioTreino.tipo === key
                               ? 'border-current shadow-md'
@@ -1590,55 +1552,7 @@ const getDadosGraficoLinha = () => {
             </div>
           )}
           
-          {/* Barra de Confirmação */}
-          {mostrarConfirmacao && (
-            <div className={`fixed bottom-0 left-0 right-0 bg-white shadow-2xl border-t-4 p-4 flex items-center justify-between z-50 animate-slide-up ${
-              tipoConfirmacao === 'success' ? 'border-green-500' :
-              tipoConfirmacao === 'error' ? 'border-red-500' :
-              tipoConfirmacao === 'warning' ? 'border-yellow-500' :
-              'border-blue-500'
-            }`}>
-              <div className="flex-1">
-                <p className="text-gray-800 font-semibold">{mensagemConfirmacao}</p>
-                <div className={`absolute top-0 left-0 right-0 h-1 animate-shrink-width ${
-                  tipoConfirmacao === 'success' ? 'bg-green-500' :
-                  tipoConfirmacao === 'error' ? 'bg-red-500' :
-                  tipoConfirmacao === 'warning' ? 'bg-yellow-500' :
-                  'bg-blue-500'
-                }`}></div>
-              </div>
-              <button
-                onClick={fecharBarraConfirmacao}
-                className="ml-4 text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-          )}
-          
-          {/* Modal de Confirmação */}
-          {mostrarModalConfirmacao && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-3xl shadow-2xl p-6 max-w-md w-full">
-                <h3 className="text-xl font-bold text-gray-800 mb-4">Confirmação</h3>
-                <p className="text-gray-700 mb-6">{mensagemModalConfirmacao}</p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={confirmarAcao}
-                    className="flex-1 bg-red-600 text-white py-3 rounded-2xl font-bold hover:bg-red-700 transition-colors"
-                  >
-                    Confirmar
-                  </button>
-                  <button
-                    onClick={cancelarAcao}
-                    className="flex-1 border-2 border-gray-300 py-3 rounded-2xl font-bold hover:bg-gray-100 transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          {renderNotificacoes()}
         </div>
       </div>
     );
@@ -1875,55 +1789,7 @@ const getDadosGraficoLinha = () => {
           )}
         </div>
         
-        {/* Barra de Confirmação */}
-        {mostrarConfirmacao && (
-          <div className={`fixed bottom-0 left-0 right-0 bg-white shadow-2xl border-t-4 p-4 flex items-center justify-between z-50 animate-slide-up ${
-            tipoConfirmacao === 'success' ? 'border-green-500' :
-            tipoConfirmacao === 'error' ? 'border-red-500' :
-            tipoConfirmacao === 'warning' ? 'border-yellow-500' :
-            'border-blue-500'
-          }`}>
-            <div className="flex-1">
-              <p className="text-gray-800 font-semibold">{mensagemConfirmacao}</p>
-              <div className={`absolute top-0 left-0 right-0 h-1 animate-shrink-width ${
-                tipoConfirmacao === 'success' ? 'bg-green-500' :
-                tipoConfirmacao === 'error' ? 'bg-red-500' :
-                tipoConfirmacao === 'warning' ? 'bg-yellow-500' :
-                'bg-blue-500'
-              }`}></div>
-            </div>
-            <button
-              onClick={fecharBarraConfirmacao}
-              className="ml-4 text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <X size={20} />
-            </button>
-          </div>
-        )}
-        
-        {/* Modal de Confirmação */}
-        {mostrarModalConfirmacao && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-3xl shadow-2xl p-6 max-w-md w-full">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Confirmação</h3>
-              <p className="text-gray-700 mb-6">{mensagemModalConfirmacao}</p>
-              <div className="flex gap-3">
-                <button
-                  onClick={confirmarAcao}
-                  className="flex-1 bg-red-600 text-white py-3 rounded-2xl font-bold hover:bg-red-700 transition-colors"
-                >
-                  Confirmar
-                </button>
-                <button
-                  onClick={cancelarAcao}
-                  className="flex-1 border-2 border-gray-300 py-3 rounded-2xl font-bold hover:bg-gray-100 transition-colors"
-                >
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {renderNotificacoes()}
       </div>
     </div>
   );
