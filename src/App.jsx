@@ -97,13 +97,23 @@ const ControleTransferencias = () => {
     carregarDados();
     carregarTreinos();
     
+    // Click outside to close dropdown
+    const handleClickOutside = (event) => {
+      if (mostrarDropdownTransferencias && !event.target.closest('.dropdown-transferencias')) {
+        setMostrarDropdownTransferencias(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    
     // Cleanup function to clear timer on unmount
     return () => {
       if (timerConfirmacao) {
         clearTimeout(timerConfirmacao);
       }
+      document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [mostrarDropdownTransferencias, timerConfirmacao]);
 
   const carregarDados = async () => {
     try {
@@ -845,9 +855,16 @@ const getDadosGraficoLinha = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Seção de Transferências com Dropdown */}
-            <div className="relative">
+            <div className="relative dropdown-transferencias">
               <button
                 onClick={() => setMostrarDropdownTransferencias(!mostrarDropdownTransferencias)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape' && mostrarDropdownTransferencias) {
+                    setMostrarDropdownTransferencias(false);
+                  }
+                }}
+                aria-expanded={mostrarDropdownTransferencias}
+                aria-haspopup="menu"
                 className="w-full bg-white rounded-3xl shadow-xl p-8 hover:shadow-2xl transition-all transform hover:scale-105 group"
               >
                 <div className="flex flex-col items-center gap-4">
@@ -875,6 +892,12 @@ const getDadosGraficoLinha = () => {
                       setTela('visualizar');
                       setMostrarDropdownTransferencias(false);
                     }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setTela('visualizar');
+                        setMostrarDropdownTransferencias(false);
+                      }
+                    }}
                     className="w-full p-6 hover:bg-green-50 transition-colors flex items-center gap-4 border-b border-gray-100 group"
                   >
                     <div className="bg-green-100 p-4 rounded-full group-hover:bg-green-600 transition-colors">
@@ -890,6 +913,12 @@ const getDadosGraficoLinha = () => {
                     onClick={() => {
                       setTela('adicionar');
                       setMostrarDropdownTransferencias(false);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setTela('adicionar');
+                        setMostrarDropdownTransferencias(false);
+                      }
                     }}
                     className="w-full p-6 hover:bg-blue-50 transition-colors flex items-center gap-4 group"
                   >
