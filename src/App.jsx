@@ -36,6 +36,11 @@ const ControleTransferencias = () => {
     repeticoes: '',
     duracao: ''
   });
+  
+  // Estados para barra de confirmação
+  const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false);
+  const [mensagemConfirmacao, setMensagemConfirmacao] = useState('');
+  const [timerConfirmacao, setTimerConfirmacao] = useState(null);
 
   const [formulario, setFormulario] = useState({
     valor: '',
@@ -484,7 +489,7 @@ const getDadosGraficoLinha = () => {
 
       if (error) throw error;
 
-      alert('Treino adicionado com sucesso!');
+      mostrarBarraConfirmacao('Treino adicionado com sucesso!');
       await carregarTreinos();
       setMostrarFormularioTreino(false);
       setFormularioTreino({
@@ -555,7 +560,7 @@ const getDadosGraficoLinha = () => {
 
       if (error) throw error;
 
-      alert('Treino atualizado com sucesso!');
+      mostrarBarraConfirmacao('Treino atualizado com sucesso!');
       await carregarTreinos();
       setMostrarFormularioTreino(false);
       setTreinoEditando(null);
@@ -613,6 +618,31 @@ const getDadosGraficoLinha = () => {
   
   const removerExercicio = (index) => {
     setExercicios(exercicios.filter((_, i) => i !== index));
+  };
+  
+  // Função para mostrar barra de confirmação
+  const mostrarBarraConfirmacao = (mensagem) => {
+    // Limpar timer anterior se existir
+    if (timerConfirmacao) {
+      clearTimeout(timerConfirmacao);
+    }
+    
+    setMensagemConfirmacao(mensagem);
+    setMostrarConfirmacao(true);
+    
+    // Auto-fechar após 4 segundos
+    const timer = setTimeout(() => {
+      setMostrarConfirmacao(false);
+    }, 4000);
+    
+    setTimerConfirmacao(timer);
+  };
+  
+  const fecharBarraConfirmacao = () => {
+    if (timerConfirmacao) {
+      clearTimeout(timerConfirmacao);
+    }
+    setMostrarConfirmacao(false);
   };
 
   const baixarPlanilha = () => {
@@ -955,47 +985,48 @@ const getDadosGraficoLinha = () => {
             Voltar para Início
           </button>
 
-          <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
-            <h1 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-              <Dumbbell className="text-purple-600" size={36} />
-              Calendário de Treinos
+          <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 mb-6">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
+              <Dumbbell className="text-purple-600" size={28} />
+              <span className="hidden sm:inline">Calendário de Treinos</span>
+              <span className="sm:hidden">Treinos</span>
             </h1>
 
             {/* Calendário */}
             <div className="mb-6">
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <button
                   onClick={() => mudarMesTreino(-1)}
-                  className="p-3 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 sm:p-3 hover:bg-gray-100 rounded-full transition-colors"
                 >
-                  <span className="text-2xl">←</span>
+                  <span className="text-xl sm:text-2xl">←</span>
                 </button>
 
-                <h2 className="text-2xl font-bold text-gray-800">
+                <h2 className="text-lg sm:text-2xl font-bold text-gray-800">
                   {meses[calendarioTreino.mes]} {calendarioTreino.ano}
                 </h2>
 
                 <button
                   onClick={() => mudarMesTreino(1)}
-                  className="p-3 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 sm:p-3 hover:bg-gray-100 rounded-full transition-colors"
                 >
-                  <span className="text-2xl">→</span>
+                  <span className="text-xl sm:text-2xl">→</span>
                 </button>
               </div>
 
               {/* Grid do calendário */}
-              <div className="grid grid-cols-7 gap-2 mb-2">
+              <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
                 {diasSemana.map(dia => (
-                  <div key={dia} className="text-center text-sm font-bold text-gray-600 py-2">
+                  <div key={dia} className="text-center text-xs sm:text-sm font-bold text-gray-600 py-1 sm:py-2">
                     {dia}
                   </div>
                 ))}
               </div>
 
-              <div className="grid grid-cols-7 gap-2">
+              <div className="grid grid-cols-7 gap-1 sm:gap-2">
                 {/* Dias vazios antes do início do mês */}
                 {Array.from({ length: primeiroDia }).map((_, i) => (
-                  <div key={`vazio-${i}`} className="h-24"></div>
+                  <div key={`vazio-${i}`} className="h-16 sm:h-24"></div>
                 ))}
                 
                 {/* Dias do mês */}
@@ -1010,29 +1041,29 @@ const getDadosGraficoLinha = () => {
                     <button
                       key={dia}
                       onClick={() => selecionarDiaTreino(dia)}
-                      className={`h-24 rounded-2xl border-2 transition-all hover:shadow-md flex flex-col items-center justify-start p-2
+                      className={`h-16 sm:h-24 rounded-lg sm:rounded-2xl border-2 transition-all hover:shadow-md flex flex-col items-center justify-start p-1 sm:p-2
                         ${isHoje ? 'border-purple-600 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}
                         ${treinosDoDia.length > 0 ? 'bg-gradient-to-br from-purple-100 to-pink-100' : 'bg-white'}
                       `}
                     >
-                      <span className={`text-lg font-semibold mb-1 ${isHoje ? 'text-purple-600' : 'text-gray-700'}`}>
+                      <span className={`text-sm sm:text-lg font-semibold mb-0.5 sm:mb-1 ${isHoje ? 'text-purple-600' : 'text-gray-700'}`}>
                         {dia}
                       </span>
                       
                       {treinosDoDia.length > 0 && (
-                        <div className="flex flex-col gap-1 w-full">
+                        <div className="flex flex-col gap-0.5 sm:gap-1 w-full">
                           {treinosDoDia.slice(0, 2).map((treino, idx) => (
                             <div 
                               key={idx}
-                              className="flex items-center justify-center gap-1 text-xs"
+                              className="flex items-center justify-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs"
                               style={{ color: TIPOS_TREINO[treino.tipo]?.cor || '#666' }}
                             >
-                              <Check size={12} />
+                              <Check size={10} className="sm:w-3 sm:h-3" />
                               <span className="truncate font-medium">{treino.subcategoria}</span>
                             </div>
                           ))}
                           {treinosDoDia.length > 2 && (
-                            <span className="text-xs text-gray-500 font-semibold">
+                            <span className="text-[10px] sm:text-xs text-gray-500 font-semibold">
                               +{treinosDoDia.length - 2}
                             </span>
                           )}
@@ -1413,6 +1444,22 @@ const getDadosGraficoLinha = () => {
               >
                 <Plus size={20} />
                 Adicionar Mais um Treino
+              </button>
+            </div>
+          )}
+          
+          {/* Barra de Confirmação */}
+          {mostrarConfirmacao && (
+            <div className="fixed bottom-0 left-0 right-0 bg-white shadow-2xl border-t-4 border-green-500 p-4 flex items-center justify-between z-50 animate-slide-up">
+              <div className="flex-1">
+                <p className="text-gray-800 font-semibold">{mensagemConfirmacao}</p>
+                <div className="absolute top-0 left-0 right-0 h-1 bg-green-500 animate-shrink-width"></div>
+              </div>
+              <button
+                onClick={fecharBarraConfirmacao}
+                className="ml-4 text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={20} />
               </button>
             </div>
           )}
