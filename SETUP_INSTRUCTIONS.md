@@ -26,6 +26,13 @@ The training feature requires a new table in your Supabase database.
    - Paste into the SQL Editor
    - Click "Run" to execute
 
+5. **Reload Schema Cache (IMPORTANT!)**
+   - After running the migrations, go to "Settings" → "API" in your Supabase dashboard
+   - Look for "Reload schema cache" or similar button
+   - Click it to refresh the schema cache
+   - This ensures the application can access the new `exercicios` column
+   - Without this step, you may get errors when editing training sessions
+
 This will create the `treinos` table with the following structure:
 - `id`: Auto-incrementing primary key
 - `data`: Date in DD/MM/YYYY format

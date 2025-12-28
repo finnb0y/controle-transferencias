@@ -134,7 +134,7 @@ const ControleTransferencias = () => {
     try {
       const { data, error } = await supabase
         .from('treinos')
-        .select('*')
+        .select('id, data, tipo, subcategoria, duracao, distancia, observacoes, exercicios, created_at')
         .order('data', { ascending: false });
 
       if (error) {
@@ -516,13 +516,10 @@ const getDadosGraficoLinha = () => {
         subcategoria: formularioTreino.subcategoria,
         duracao,
         distancia,
-        observacoes: formularioTreino.observacoes || null
+        observacoes: formularioTreino.observacoes || null,
+        // Always include exercicios field (empty array if not functional)
+        exercicios: formularioTreino.subcategoria === 'Funcional' ? exercicios : []
       };
-      
-      // Add exercises only if functional training
-      if (formularioTreino.subcategoria === 'Funcional') {
-        treinoData.exercicios = exercicios;
-      }
 
       const { error } = await supabase
         .from('treinos')
@@ -587,16 +584,10 @@ const getDadosGraficoLinha = () => {
         subcategoria: formularioTreino.subcategoria,
         duracao,
         distancia,
-        observacoes: formularioTreino.observacoes || null
+        observacoes: formularioTreino.observacoes || null,
+        // Always include exercicios field (empty array if not functional)
+        exercicios: formularioTreino.subcategoria === 'Funcional' ? exercicios : []
       };
-      
-      // Add exercises only if functional training, otherwise preserve empty array
-      if (formularioTreino.subcategoria === 'Funcional') {
-        updateData.exercicios = exercicios;
-      } else {
-        // Only clear exercises if changing from functional to another type
-        updateData.exercicios = [];
-      }
       
       const { error } = await supabase
         .from('treinos')
