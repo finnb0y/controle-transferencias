@@ -3,6 +3,8 @@ import { Calendar, DollarSign, X, Download, Filter, PieChart, TrendingUp, Home, 
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { supabase } from './supabaseClient';
 
+const CONFIRMATION_TIMEOUT = 4000; // 4 seconds
+
 const ControleTransferencias = () => {
   const [tela, setTela] = useState('inicial');
   const [transferencias, setTransferencias] = useState([]);
@@ -85,6 +87,13 @@ const ControleTransferencias = () => {
   useEffect(() => {
     carregarDados();
     carregarTreinos();
+    
+    // Cleanup function to clear timer on unmount
+    return () => {
+      if (timerConfirmacao) {
+        clearTimeout(timerConfirmacao);
+      }
+    };
   }, []);
 
   const carregarDados = async () => {
@@ -630,10 +639,10 @@ const getDadosGraficoLinha = () => {
     setMensagemConfirmacao(mensagem);
     setMostrarConfirmacao(true);
     
-    // Auto-fechar após 4 segundos
+    // Auto-fechar após CONFIRMATION_TIMEOUT
     const timer = setTimeout(() => {
       setMostrarConfirmacao(false);
-    }, 4000);
+    }, CONFIRMATION_TIMEOUT);
     
     setTimerConfirmacao(timer);
   };

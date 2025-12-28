@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 @layer utilities {
+  :root {
+    --confirmation-timeout: 4s;
+  }
+  
   @keyframes slide-up {
     from {
       transform: translateY(100%);
@@ -28,6 +32,6 @@
   }
   
   .animate-shrink-width {
-    animation: shrink-width 4s linear;
+    animation: shrink-width var(--confirmation-timeout) linear;
   }
 }
