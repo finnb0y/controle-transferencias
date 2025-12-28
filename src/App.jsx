@@ -435,6 +435,22 @@ const getDadosGraficoLinha = () => {
   };
   
   // Funções para Treino
+  
+  // Helper function to convert form values to proper database types
+  const converterValoresTreino = (formulario) => {
+    const duracaoValue = formulario.duracao && formulario.duracao.trim() !== '' 
+      ? parseInt(formulario.duracao, 10) 
+      : null;
+    const distanciaValue = formulario.distancia && formulario.distancia.trim() !== '' 
+      ? parseFloat(formulario.distancia) 
+      : null;
+    
+    return {
+      duracao: duracaoValue,
+      distancia: distanciaValue
+    };
+  };
+  
   const getTreinosNaData = (dia, mes, ano) => {
     const dataFormatada = `${String(dia).padStart(2, '0')}/${String(mes + 1).padStart(2, '0')}/${ano}`;
     return treinos.filter(t => t.data === dataFormatada);
@@ -484,20 +500,15 @@ const getDadosGraficoLinha = () => {
     }
 
     try {
-      // Convert string values to proper types (number or null)
-      const duracaoValue = formularioTreino.duracao && formularioTreino.duracao.trim() !== '' 
-        ? parseInt(formularioTreino.duracao, 10) 
-        : null;
-      const distanciaValue = formularioTreino.distancia && formularioTreino.distancia.trim() !== '' 
-        ? parseFloat(formularioTreino.distancia) 
-        : null;
+      // Convert string values to proper types using helper function
+      const { duracao, distancia } = converterValoresTreino(formularioTreino);
       
       const treinoData = {
         data: dataSelecionadaTreino,
         tipo: formularioTreino.tipo,
         subcategoria: formularioTreino.subcategoria,
-        duracao: duracaoValue,
-        distancia: distanciaValue,
+        duracao: duracao,
+        distancia: distancia,
         observacoes: formularioTreino.observacoes || null
       };
       
@@ -562,19 +573,14 @@ const getDadosGraficoLinha = () => {
     }
     
     try {
-      // Convert string values to proper types (number or null)
-      const duracaoValue = formularioTreino.duracao && formularioTreino.duracao.trim() !== '' 
-        ? parseInt(formularioTreino.duracao, 10) 
-        : null;
-      const distanciaValue = formularioTreino.distancia && formularioTreino.distancia.trim() !== '' 
-        ? parseFloat(formularioTreino.distancia) 
-        : null;
+      // Convert string values to proper types using helper function
+      const { duracao, distancia } = converterValoresTreino(formularioTreino);
       
       const updateData = {
         tipo: formularioTreino.tipo,
         subcategoria: formularioTreino.subcategoria,
-        duracao: duracaoValue,
-        distancia: distanciaValue,
+        duracao: duracao,
+        distancia: distancia,
         observacoes: formularioTreino.observacoes || null
       };
       
