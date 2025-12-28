@@ -524,10 +524,9 @@ const getDadosGraficoLinha = () => {
         treinoData.exercicios = exercicios;
       }
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('treinos')
-        .insert([treinoData])
-        .select();
+        .insert([treinoData]);
 
       if (error) throw error;
 
@@ -602,8 +601,7 @@ const getDadosGraficoLinha = () => {
       const { error } = await supabase
         .from('treinos')
         .update(updateData)
-        .eq('id', treinoEditando.id)
-        .select();
+        .eq('id', treinoEditando.id);
 
       if (error) throw error;
 
