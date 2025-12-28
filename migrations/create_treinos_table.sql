@@ -21,8 +21,18 @@ CREATE INDEX IF NOT EXISTS idx_treinos_tipo ON treinos(tipo);
 -- Habilitar Row Level Security (RLS)
 ALTER TABLE treinos ENABLE ROW LEVEL SECURITY;
 
--- Política para permitir todas as operações (para simplificar, ajustar conforme necessário)
-CREATE POLICY "Enable all access for treinos" ON treinos
-    FOR ALL
-    USING (true)
-    WITH CHECK (true);
+-- Criar a política somente se ela não existir
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_policies
+        WHERE policyname = 'Enable all access for treinos'
+    ) THEN
+        CREATE POLICY "Enable all access for treinos"
+        ON treinos
+        FOR ALL
+        USING (true)
+        WITH CHECK (true);
+    END IF;
+END $$;
