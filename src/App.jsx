@@ -438,12 +438,19 @@ const getDadosGraficoLinha = () => {
   
   // Helper function to convert form values to proper database types
   const converterValoresTreino = (formulario) => {
-    const duracaoValue = formulario.duracao && formulario.duracao.trim() !== '' 
-      ? parseInt(formulario.duracao, 10) 
-      : null;
-    const distanciaValue = formulario.distancia && formulario.distancia.trim() !== '' 
-      ? parseFloat(formulario.distancia) 
-      : null;
+    // Convert duracao to integer or null, handling NaN cases
+    let duracaoValue = null;
+    if (formulario.duracao && String(formulario.duracao).trim() !== '') {
+      const parsed = parseInt(formulario.duracao, 10);
+      duracaoValue = isNaN(parsed) ? null : parsed;
+    }
+    
+    // Convert distancia to float or null, handling NaN cases
+    let distanciaValue = null;
+    if (formulario.distancia && String(formulario.distancia).trim() !== '') {
+      const parsed = parseFloat(formulario.distancia);
+      distanciaValue = isNaN(parsed) ? null : parsed;
+    }
     
     return {
       duracao: duracaoValue,
@@ -507,8 +514,8 @@ const getDadosGraficoLinha = () => {
         data: dataSelecionadaTreino,
         tipo: formularioTreino.tipo,
         subcategoria: formularioTreino.subcategoria,
-        duracao: duracao,
-        distancia: distancia,
+        duracao,
+        distancia,
         observacoes: formularioTreino.observacoes || null
       };
       
@@ -579,8 +586,8 @@ const getDadosGraficoLinha = () => {
       const updateData = {
         tipo: formularioTreino.tipo,
         subcategoria: formularioTreino.subcategoria,
-        duracao: duracao,
-        distancia: distancia,
+        duracao,
+        distancia,
         observacoes: formularioTreino.observacoes || null
       };
       
