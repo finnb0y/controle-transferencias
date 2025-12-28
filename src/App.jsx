@@ -484,12 +484,20 @@ const getDadosGraficoLinha = () => {
     }
 
     try {
+      // Convert string values to proper types (number or null)
+      const duracaoValue = formularioTreino.duracao && formularioTreino.duracao.trim() !== '' 
+        ? parseInt(formularioTreino.duracao, 10) 
+        : null;
+      const distanciaValue = formularioTreino.distancia && formularioTreino.distancia.trim() !== '' 
+        ? parseFloat(formularioTreino.distancia) 
+        : null;
+      
       const treinoData = {
         data: dataSelecionadaTreino,
         tipo: formularioTreino.tipo,
         subcategoria: formularioTreino.subcategoria,
-        duracao: formularioTreino.duracao || null,
-        distancia: formularioTreino.distancia || null,
+        duracao: duracaoValue,
+        distancia: distanciaValue,
         observacoes: formularioTreino.observacoes || null
       };
       
@@ -519,7 +527,8 @@ const getDadosGraficoLinha = () => {
       setExercicioAtual({ nome: '', repeticoes: '', duracao: '' });
     } catch (error) {
       console.error('Erro ao adicionar treino:', error);
-      mostrarBarraConfirmacao('Erro ao adicionar treino. Tente novamente.', 'error');
+      const errorMessage = error.message || 'Erro desconhecido';
+      mostrarBarraConfirmacao(`Erro ao adicionar treino: ${errorMessage}`, 'error');
     }
   };
   
@@ -553,11 +562,19 @@ const getDadosGraficoLinha = () => {
     }
     
     try {
+      // Convert string values to proper types (number or null)
+      const duracaoValue = formularioTreino.duracao && formularioTreino.duracao.trim() !== '' 
+        ? parseInt(formularioTreino.duracao, 10) 
+        : null;
+      const distanciaValue = formularioTreino.distancia && formularioTreino.distancia.trim() !== '' 
+        ? parseFloat(formularioTreino.distancia) 
+        : null;
+      
       const updateData = {
         tipo: formularioTreino.tipo,
         subcategoria: formularioTreino.subcategoria,
-        duracao: formularioTreino.duracao || null,
-        distancia: formularioTreino.distancia || null,
+        duracao: duracaoValue,
+        distancia: distanciaValue,
         observacoes: formularioTreino.observacoes || null
       };
       
@@ -591,7 +608,8 @@ const getDadosGraficoLinha = () => {
       setExercicioAtual({ nome: '', repeticoes: '', duracao: '' });
     } catch (error) {
       console.error('Erro ao editar treino:', error);
-      mostrarBarraConfirmacao('Erro ao editar treino. Tente novamente.', 'error');
+      const errorMessage = error.message || 'Erro desconhecido';
+      mostrarBarraConfirmacao(`Erro ao editar treino: ${errorMessage}`, 'error');
     }
   };
   
