@@ -540,10 +540,11 @@ const getDadosGraficoLinha = () => {
         observacoes: formularioTreino.observacoes || null
       };
       
-      // Add exercises only if functional training
+      // Add exercises only if functional training, otherwise preserve empty array
       if (formularioTreino.subcategoria === 'Funcional') {
         updateData.exercicios = exercicios;
       } else {
+        // Only clear exercises if changing from functional to another type
         updateData.exercicios = [];
       }
       
@@ -595,13 +596,14 @@ const getDadosGraficoLinha = () => {
   
   // Funções para gerenciar exercícios múltiplos
   const adicionarExercicio = () => {
-    if (!exercicioAtual.nome) {
+    if (!exercicioAtual.nome || !exercicioAtual.nome.trim()) {
       alert('Por favor, preencha o nome do exercício!');
       return;
     }
     
-    if (!exercicioAtual.repeticoes && !exercicioAtual.duracao) {
-      alert('Por favor, preencha as repetições ou a duração do exercício!');
+    if ((!exercicioAtual.repeticoes || exercicioAtual.repeticoes === '' || parseInt(exercicioAtual.repeticoes) <= 0) && 
+        (!exercicioAtual.duracao || exercicioAtual.duracao === '' || parseInt(exercicioAtual.duracao) <= 0)) {
+      alert('Por favor, preencha as repetições ou a duração do exercício com um valor maior que zero!');
       return;
     }
     
@@ -1096,6 +1098,12 @@ const getDadosGraficoLinha = () => {
                         <button
                           key={key}
                           onClick={() => {
+                            // Warn if changing from functional with exercises
+                            if (formularioTreino.subcategoria === 'Funcional' && exercicios.length > 0 && key !== formularioTreino.tipo) {
+                              if (!confirm('Mudar o tipo de treino removerá os exercícios adicionados. Deseja continuar?')) {
+                                return;
+                              }
+                            }
                             setFormularioTreino({ ...formularioTreino, tipo: key, subcategoria: '' });
                             setExercicios([]);
                             setExercicioAtual({ nome: '', repeticoes: '', duracao: '' });
