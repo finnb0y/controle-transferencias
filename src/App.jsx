@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, DollarSign, X, Download, Filter, PieChart, TrendingUp, Home, Plus, Eye, Dumbbell, Check, Edit2, Save } from 'lucide-react';
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { supabase } from './supabaseClient';
@@ -43,7 +43,7 @@ const ControleTransferencias = () => {
   const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false);
   const [mensagemConfirmacao, setMensagemConfirmacao] = useState('');
   const [tipoConfirmacao, setTipoConfirmacao] = useState('success'); // 'success', 'error', 'warning', 'info'
-  const [timerConfirmacao, setTimerConfirmacao] = useState(null);
+  const timerConfirmacaoRef = useRef(null); // Use ref instead of state to avoid re-renders
   
   // Estados para modal de confirmação
   const [mostrarModalConfirmacao, setMostrarModalConfirmacao] = useState(false);
@@ -96,13 +96,13 @@ const ControleTransferencias = () => {
     carregarDados();
     carregarTreinos();
     
-    // Cleanup function to clear timer on unmount
+    // Cleanup function to clear timer on component unmount
     return () => {
-      if (timerConfirmacao) {
-        clearTimeout(timerConfirmacao);
+      if (timerConfirmacaoRef.current) {
+        clearTimeout(timerConfirmacaoRef.current);
       }
     };
-  }, [timerConfirmacao]);
+  }, []); // Empty dependency array - only run once on mount
 
   const carregarDados = async () => {
     try {
@@ -677,8 +677,8 @@ const getDadosGraficoLinha = () => {
   // Função para mostrar barra de confirmação
   const mostrarBarraConfirmacao = (mensagem, tipo = 'success') => {
     // Limpar timer anterior se existir
-    if (timerConfirmacao) {
-      clearTimeout(timerConfirmacao);
+    if (timerConfirmacaoRef.current) {
+      clearTimeout(timerConfirmacaoRef.current);
     }
     
     setMensagemConfirmacao(mensagem);
@@ -690,12 +690,12 @@ const getDadosGraficoLinha = () => {
       setMostrarConfirmacao(false);
     }, CONFIRMATION_TIMEOUT);
     
-    setTimerConfirmacao(timer);
+    timerConfirmacaoRef.current = timer;
   };
   
   const fecharBarraConfirmacao = () => {
-    if (timerConfirmacao) {
-      clearTimeout(timerConfirmacao);
+    if (timerConfirmacaoRef.current) {
+      clearTimeout(timerConfirmacaoRef.current);
     }
     setMostrarConfirmacao(false);
   };
