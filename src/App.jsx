@@ -1183,6 +1183,7 @@ const getDadosGraficoLinha = () => {
             <div className="mb-6">
               <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <button
+                  type="button"
                   onClick={() => mudarMesTreino(-1)}
                   className="p-2 sm:p-3 hover:bg-gray-100 rounded-full transition-colors"
                 >
@@ -1194,6 +1195,7 @@ const getDadosGraficoLinha = () => {
                 </h2>
 
                 <button
+                  type="button"
                   onClick={() => mudarMesTreino(1)}
                   className="p-2 sm:p-3 hover:bg-gray-100 rounded-full transition-colors"
                 >
@@ -1227,6 +1229,7 @@ const getDadosGraficoLinha = () => {
                   return (
                     <button
                       key={dia}
+                      type="button"
                       onClick={() => selecionarDiaTreino(dia)}
                       className={`h-16 sm:h-24 rounded-lg sm:rounded-2xl border-2 transition-all hover:shadow-md flex flex-col items-center justify-start p-1 sm:p-2
                         ${isHoje ? 'border-purple-600 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}
@@ -1285,6 +1288,7 @@ const getDadosGraficoLinha = () => {
                     {treinoEditando ? 'Editar Treino' : 'Adicionar Treino'}
                   </h2>
                   <button
+                    type="button"
                     onClick={() => {
                       setMostrarFormularioTreino(false);
                       setTreinoEditando(null);
@@ -1315,6 +1319,7 @@ const getDadosGraficoLinha = () => {
                       {Object.entries(TIPOS_TREINO).map(([key, tipo]) => (
                         <button
                           key={key}
+                          type="button"
                           onClick={() => handleMudarTipoTreino(key)}
                           className={`p-4 rounded-2xl border-2 transition-all ${
                             formularioTreino.tipo === key
@@ -1370,6 +1375,7 @@ const getDadosGraficoLinha = () => {
                                 </span>
                               </div>
                               <button
+                                type="button"
                                 onClick={() => removerExercicio(index)}
                                 className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-50"
                               >
@@ -1424,6 +1430,7 @@ const getDadosGraficoLinha = () => {
                         </div>
                         
                         <button
+                          type="button"
                           onClick={adicionarExercicio}
                           className="w-full bg-purple-600 text-white py-2 rounded-xl font-semibold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
                         >
@@ -1483,6 +1490,7 @@ const getDadosGraficoLinha = () => {
                   {/* Botões */}
                   <div className="flex gap-3 pt-2">
                     <button
+                      type="button"
                       onClick={treinoEditando ? salvarEdicaoTreino : adicionarTreino}
                       className="flex-1 bg-purple-600 text-white py-3 rounded-2xl font-bold text-lg hover:bg-purple-700 transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                     >
@@ -1490,6 +1498,7 @@ const getDadosGraficoLinha = () => {
                       {treinoEditando ? 'Salvar Alterações' : 'Adicionar Treino'}
                     </button>
                     <button
+                      type="button"
                       onClick={() => {
                         setMostrarFormularioTreino(false);
                         setTreinoEditando(null);
@@ -1585,12 +1594,14 @@ const getDadosGraficoLinha = () => {
                         </div>
                         <div className="flex gap-2">
                           <button
+                            type="button"
                             onClick={() => editarTreino(treino)}
                             className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded-full transition-colors"
                           >
                             <Edit2 size={20} />
                           </button>
                           <button
+                            type="button"
                             onClick={() => excluirTreino(treino.id)}
                             className="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded-full transition-colors"
                           >
@@ -1604,6 +1615,7 @@ const getDadosGraficoLinha = () => {
               )}
               
               <button
+                type="button"
                 onClick={() => {
                   setMostrarFormularioTreino(true);
                   setFormularioTreino({
