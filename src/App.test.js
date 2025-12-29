@@ -124,5 +124,3 @@ describe('Async Training Operations', () => {
     expect(treinosState.length).toBe(2);
   });
 });
-
-export default describe;

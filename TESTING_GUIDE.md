@@ -127,7 +127,9 @@ const result = await mockSupabase
   .from('treinos')
   .insert([{ tipo: 'cardio', subcategoria: 'Corrida' }]);
 
-console.assert(result.error === null, 'Should insert successfully');
+// Proper test assertion
+expect(result.error).toBe(null);
+expect(result.data).toBeDefined();
 ```
 
 ## Expected Behavior

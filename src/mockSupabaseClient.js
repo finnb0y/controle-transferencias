@@ -15,7 +15,10 @@ export const createMockSupabaseClient = () => {
           // Simulate async operation
           await new Promise(resolve => setTimeout(resolve, 100));
           
-          const newRecords = data.map(record => ({
+          // Ensure data is an array
+          const dataArray = Array.isArray(data) ? data : [data];
+          
+          const newRecords = dataArray.map(record => ({
             ...record,
             id: nextId++,
             created_at: new Date().toISOString()
