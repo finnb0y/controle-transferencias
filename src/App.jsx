@@ -93,8 +93,18 @@ const ControleTransferencias = () => {
   };
 
   useEffect(() => {
-    carregarDados();
-    carregarTreinos();
+    const inicializar = async () => {
+      try {
+        await carregarDados();
+        await carregarTreinos();
+      } catch (error) {
+        console.error('Erro durante inicialização:', error);
+        // Ensure loading is set to false even if there's an error
+        setCarregando(false);
+      }
+    };
+    
+    inicializar();
     
     // Cleanup function to clear timer on component unmount
     return () => {
@@ -112,9 +122,14 @@ const ControleTransferencias = () => {
         .select('*')
         .order('data_registro', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar transferências:', error);
+        // If table doesn't exist or other error, just set empty array
+        setTransferencias([]);
+        return;
+      }
 
-      const dadosFormatados = data.map(t => ({
+      const dadosFormatados = (data || []).map(t => ({
         id: t.id,
         valor: t.valor,
         data: t.data,
@@ -126,7 +141,8 @@ const ControleTransferencias = () => {
       setTransferencias(dadosFormatados);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
-      mostrarBarraConfirmacao('Erro ao carregar transferências. Verifique sua conexão.', 'error');
+      // Don't show error bar during initial load - just set empty array
+      setTransferencias([]);
     } finally {
       setCarregando(false);
     }
@@ -829,8 +845,12 @@ const getDadosGraficoLinha = () => {
     );
   }
 
+  // Safety check: if tela is undefined or invalid, reset to 'inicial'
+  const telaValida = ['inicial', 'transferencias-menu', 'adicionar', 'visualizar', 'treino'];
+  const telaAtual = telaValida.includes(tela) ? tela : 'inicial';
+
   // TELA INICIAL
-  if (tela === 'inicial') {
+  if (telaAtual === 'inicial') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="max-w-4xl w-full">
@@ -885,7 +905,7 @@ const getDadosGraficoLinha = () => {
   }
 
   // TELA DE MENU DE TRANSFERÊNCIAS
-  if (tela === 'transferencias-menu') {
+  if (telaAtual === 'transferencias-menu') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="max-w-6xl w-full">
@@ -946,7 +966,7 @@ const getDadosGraficoLinha = () => {
   }
 
   // TELA DE ADICIONAR
-  if (tela === 'adicionar') {
+  if (telaAtual === 'adicionar') {
     const todasTransferencias = filtrarTransferencias(false);
 
     return (
@@ -1157,7 +1177,7 @@ const getDadosGraficoLinha = () => {
   }
   
   // TELA DE TREINO
-  if (tela === 'treino') {
+  if (telaAtual === 'treino') {
     const diasNoMes = getDiasNoMes(calendarioTreino.mes, calendarioTreino.ano);
     const primeiroDia = getPrimeiroDiaSemana(calendarioTreino.mes, calendarioTreino.ano);
     
