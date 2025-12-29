@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, DollarSign, X, Download, Filter, PieChart, TrendingUp, Home, Plus, Eye, Dumbbell, Check, Edit2, Save, ChevronDown } from 'lucide-react';
+import { Calendar, DollarSign, X, Download, Filter, PieChart, TrendingUp, Home, Plus, Eye, Dumbbell, Check, Edit2, Save } from 'lucide-react';
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { supabase } from './supabaseClient';
 
@@ -50,8 +50,7 @@ const ControleTransferencias = () => {
   const [mensagemModalConfirmacao, setMensagemModalConfirmacao] = useState('');
   const [callbackConfirmacao, setCallbackConfirmacao] = useState(null);
   
-  // Estado para dropdown de Transferências
-  const [mostrarDropdownTransferencias, setMostrarDropdownTransferencias] = useState(false);
+
 
   const [formulario, setFormulario] = useState({
     valor: '',
@@ -97,23 +96,13 @@ const ControleTransferencias = () => {
     carregarDados();
     carregarTreinos();
     
-    // Click outside to close dropdown
-    const handleClickOutside = (event) => {
-      if (mostrarDropdownTransferencias && !event.target.closest('.dropdown-transferencias')) {
-        setMostrarDropdownTransferencias(false);
-      }
-    };
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    
     // Cleanup function to clear timer on unmount
     return () => {
       if (timerConfirmacao) {
         clearTimeout(timerConfirmacao);
       }
-      document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [mostrarDropdownTransferencias, timerConfirmacao]);
+  }, [timerConfirmacao]);
 
   const carregarDados = async () => {
     try {
@@ -854,85 +843,23 @@ const getDadosGraficoLinha = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Seção de Transferências com Dropdown */}
-            <div className="relative dropdown-transferencias">
-              <button
-                onClick={() => setMostrarDropdownTransferencias(!mostrarDropdownTransferencias)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape' && mostrarDropdownTransferencias) {
-                    setMostrarDropdownTransferencias(false);
-                  }
-                }}
-                aria-expanded={mostrarDropdownTransferencias}
-                aria-haspopup="menu"
-                className="w-full bg-white rounded-3xl shadow-xl p-8 hover:shadow-2xl transition-all transform hover:scale-105 group"
-              >
-                <div className="flex flex-col items-center gap-4">
-                  <div className="bg-blue-100 p-6 rounded-full group-hover:bg-blue-600 transition-colors">
-                    <DollarSign className="text-blue-600 group-hover:text-white transition-colors" size={48} />
-                  </div>
-                  <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                    Transferências
-                    <ChevronDown 
-                      className={`transition-transform ${mostrarDropdownTransferencias ? 'rotate-180' : ''}`} 
-                      size={24} 
-                    />
-                  </h2>
-                  <p className="text-gray-600 text-center">
-                    Gerencie suas transferências financeiras
-                  </p>
+            {/* Seção de Transferências - Navigate to Menu Page */}
+            <button
+              onClick={() => setTela('transferencias-menu')}
+              className="bg-white rounded-3xl shadow-xl p-8 hover:shadow-2xl transition-all transform hover:scale-105 group"
+            >
+              <div className="flex flex-col items-center gap-4">
+                <div className="bg-blue-100 p-6 rounded-full group-hover:bg-blue-600 transition-colors">
+                  <DollarSign className="text-blue-600 group-hover:text-white transition-colors" size={48} />
                 </div>
-              </button>
-              
-              {/* Dropdown Menu */}
-              {mostrarDropdownTransferencias && (
-                <div className="absolute top-full mt-2 left-0 right-0 bg-white rounded-2xl shadow-2xl overflow-hidden z-10 border-2 border-gray-100">
-                  <button
-                    onClick={() => {
-                      setTela('visualizar');
-                      setMostrarDropdownTransferencias(false);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        setTela('visualizar');
-                        setMostrarDropdownTransferencias(false);
-                      }
-                    }}
-                    className="w-full p-6 hover:bg-green-50 transition-colors flex items-center gap-4 border-b border-gray-100 group"
-                  >
-                    <div className="bg-green-100 p-4 rounded-full group-hover:bg-green-600 transition-colors">
-                      <Eye className="text-green-600 group-hover:text-white transition-colors" size={32} />
-                    </div>
-                    <div className="text-left flex-1">
-                      <h3 className="text-xl font-bold text-gray-800 mb-1">Visualizar Histórico</h3>
-                      <p className="text-sm text-gray-600">Veja gráficos, relatórios e exporte planilhas</p>
-                    </div>
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      setTela('adicionar');
-                      setMostrarDropdownTransferencias(false);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        setTela('adicionar');
-                        setMostrarDropdownTransferencias(false);
-                      }
-                    }}
-                    className="w-full p-6 hover:bg-blue-50 transition-colors flex items-center gap-4 group"
-                  >
-                    <div className="bg-blue-100 p-4 rounded-full group-hover:bg-blue-600 transition-colors">
-                      <Plus className="text-blue-600 group-hover:text-white transition-colors" size={32} />
-                    </div>
-                    <div className="text-left flex-1">
-                      <h3 className="text-xl font-bold text-gray-800 mb-1">Adicionar Transferências</h3>
-                      <p className="text-sm text-gray-600">Registre novas transferências com data, valor e tipo</p>
-                    </div>
-                  </button>
-                </div>
-              )}
-            </div>
+                <h2 className="text-2xl font-bold text-gray-800">
+                  Transferências
+                </h2>
+                <p className="text-gray-600 text-center">
+                  Gerencie suas transferências financeiras
+                </p>
+              </div>
+            </button>
             
             {/* Seção de Treino */}
             <button
@@ -946,6 +873,67 @@ const getDadosGraficoLinha = () => {
                 <h2 className="text-2xl font-bold text-gray-800">Treino</h2>
                 <p className="text-gray-600 text-center">
                   Acompanhe seus treinos com calendário interativo
+                </p>
+              </div>
+            </button>
+          </div>
+        </div>
+        
+        {renderNotificacoes()}
+      </div>
+    );
+  }
+
+  // TELA DE MENU DE TRANSFERÊNCIAS
+  if (tela === 'transferencias-menu') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <div className="max-w-6xl w-full">
+          <button
+            onClick={() => setTela('inicial')}
+            className="mb-6 flex items-center gap-2 bg-white px-6 py-3 rounded-full shadow hover:shadow-md transition-all"
+          >
+            <Home size={20} />
+            Voltar para Início
+          </button>
+
+          <div className="text-center mb-12">
+            <h1 className="text-5xl font-bold text-gray-800 mb-4 flex items-center justify-center gap-4">
+              <DollarSign className="text-blue-600" size={56} />
+              Transferências
+            </h1>
+            <p className="text-xl text-gray-600">Escolha uma opção para gerenciar suas transferências</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Visualizar Histórico */}
+            <button
+              onClick={() => setTela('visualizar')}
+              className="bg-white rounded-3xl shadow-xl p-12 hover:shadow-2xl transition-all transform hover:scale-105 group"
+            >
+              <div className="flex flex-col items-center gap-6">
+                <div className="bg-green-100 p-8 rounded-full group-hover:bg-green-600 transition-colors">
+                  <Eye className="text-green-600 group-hover:text-white transition-colors" size={64} />
+                </div>
+                <h2 className="text-3xl font-bold text-gray-800">Visualizar Histórico</h2>
+                <p className="text-gray-600 text-center text-lg">
+                  Veja gráficos, relatórios e exporte planilhas das suas transferências
+                </p>
+              </div>
+            </button>
+            
+            {/* Adicionar Transferências */}
+            <button
+              onClick={() => setTela('adicionar')}
+              className="bg-white rounded-3xl shadow-xl p-12 hover:shadow-2xl transition-all transform hover:scale-105 group"
+            >
+              <div className="flex flex-col items-center gap-6">
+                <div className="bg-blue-100 p-8 rounded-full group-hover:bg-blue-600 transition-colors">
+                  <Plus className="text-blue-600 group-hover:text-white transition-colors" size={64} />
+                </div>
+                <h2 className="text-3xl font-bold text-gray-800">Adicionar Transferências</h2>
+                <p className="text-gray-600 text-center text-lg">
+                  Registre novas transferências com data, valor e tipo
                 </p>
               </div>
             </button>
