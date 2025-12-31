@@ -4,10 +4,10 @@
 
 Please place a background image with the following specifications in this directory:
 
-- **Filename**: `treino-background.jpg`
+- **Filename**: `treino-background.png`
 - **Dimensions**: 1920x1080 pixels
 - **Aspect Ratio**: 16:9
-- **Format**: JPG or PNG
+- **Format**: PNG or JPG
 
 ## CSS Configuration
 
@@ -15,7 +15,7 @@ The image will be displayed with the following CSS properties:
 - `background-size: cover` - Ensures the image covers the entire area
 - `background-position: center center` - Prioritizes the center of the image
 - `background-repeat: no-repeat` - Prevents image repetition
-- `background-attachment: fixed` - Creates a fixed parallax effect
+- `background-attachment: scroll` - Uses scroll mode for optimal performance across devices
 
 ## Responsive Behavior
 
