@@ -528,7 +528,7 @@ const getDadosGraficoLinha = () => {
     const iconSize = treinosDoDia.length >= 3 ? 12 : 16;
     
     const getIconForWorkout = (treino, index) => {
-      // Activity (sneakers) for cardio, Dumbbell for intensity
+      // Activity icon for cardio, Dumbbell for intensity
       const Icon = treino.tipo === 'cardio' ? Activity : Dumbbell;
       const color = TIPOS_TREINO[treino.tipo]?.cor || '#666';
       return <Icon key={`${treino.id}-${index}`} size={iconSize} style={{ color }} className="drop-shadow-sm" />;
@@ -1824,8 +1824,8 @@ const getDadosGraficoLinha = () => {
       const tiposContagem = { cardio: 0, intensidade: 0 };
       
       treinosMes.forEach(t => {
-        // Only count valid training types
-        if (t.tipo && (t.tipo === 'cardio' || t.tipo === 'intensidade')) {
+        // Only count valid training types from TIPOS_TREINO
+        if (t.tipo && TIPOS_TREINO[t.tipo]) {
           tiposContagem[t.tipo] = (tiposContagem[t.tipo] || 0) + 1;
         }
       });
@@ -1843,6 +1843,12 @@ const getDadosGraficoLinha = () => {
     };
     
     const estatisticas = calcularEstatisticasMes();
+    
+    // Prepare chart data for donut chart
+    const chartData = [
+      { name: 'Cardio', value: estatisticas.tiposContagem.cardio || 0, color: TIPOS_TREINO.cardio.cor },
+      { name: 'Intensidade', value: estatisticas.tiposContagem.intensidade || 0, color: TIPOS_TREINO.intensidade.cor }
+    ].filter(item => item.value > 0);
     
     return (
       <div className={`min-h-screen p-4 ${modoNoturno ? 'treino-background-noite' : 'treino-background-dia'}`} style={{ fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif' }}>
@@ -2096,13 +2102,7 @@ const getDadosGraficoLinha = () => {
             </div>
             
             {/* Mini Donut Chart with Recharts */}
-            {(estatisticas.tiposContagem.cardio > 0 || estatisticas.tiposContagem.intensidade > 0) && (() => {
-              const chartData = [
-                { name: 'Cardio', value: estatisticas.tiposContagem.cardio || 0, color: TIPOS_TREINO.cardio.cor },
-                { name: 'Intensidade', value: estatisticas.tiposContagem.intensidade || 0, color: TIPOS_TREINO.intensidade.cor }
-              ].filter(item => item.value > 0);
-              
-              return (
+            {chartData.length > 0 && (
               <div className="mt-6">
                 <h3 className={`text-lg font-semibold mb-3 ${
                   modoNoturno ? 'text-slate-200' : 'text-gray-700'
@@ -2150,8 +2150,7 @@ const getDadosGraficoLinha = () => {
                   )}
                 </div>
               </div>
-              );
-            })()}
+            )}
           </div>
           
           {/* Modal de Recompensas */}
