@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, DollarSign, X, Download, Filter, PieChart, TrendingUp, Home, Plus, Eye, Dumbbell, Check, Edit2, Save, Award, Moon, Sun } from 'lucide-react';
+import { Calendar, DollarSign, X, Download, Filter, PieChart, TrendingUp, Home, Plus, Eye, Dumbbell, Check, Edit2, Save, Award, Moon, Sun, Activity } from 'lucide-react';
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { supabase } from './supabaseClient';
 
@@ -519,6 +519,102 @@ const getDadosGraficoLinha = () => {
   const getTreinosNaData = (dia, mes, ano) => {
     const dataFormatada = `${String(dia).padStart(2, '0')}/${String(mes + 1).padStart(2, '0')}/${ano}`;
     return treinos.filter(t => t.data === dataFormatada);
+  };
+  
+  // Render workout icons as pins on calendar days
+  const renderWorkoutIcons = (treinosDoDia) => {
+    if (treinosDoDia.length === 0) return null;
+    
+    const iconSize = treinosDoDia.length >= 3 ? 12 : 16;
+    
+    const getIconForWorkout = (treino, index) => {
+      // Activity icon for cardio, Dumbbell for intensity
+      const Icon = treino.tipo === 'cardio' ? Activity : Dumbbell;
+      const color = TIPOS_TREINO[treino.tipo]?.cor || '#666';
+      return <Icon key={`${treino.id}-${index}`} size={iconSize} style={{ color }} className="drop-shadow-sm" />;
+    };
+    
+    const icons = treinosDoDia.slice(0, 6).map((treino, idx) => getIconForWorkout(treino, idx));
+    
+    // Layout based on number of workouts
+    if (treinosDoDia.length === 1) {
+      return (
+        <div className="flex justify-center items-center">
+          {icons[0]}
+        </div>
+      );
+    }
+    
+    if (treinosDoDia.length === 2) {
+      return (
+        <div className="flex justify-center items-center gap-0.5">
+          {icons[0]}
+          {icons[1]}
+        </div>
+      );
+    }
+    
+    if (treinosDoDia.length === 3) {
+      return (
+        <div className="flex justify-center items-center gap-0.5">
+          {icons[0]}
+          {icons[1]}
+          {icons[2]}
+        </div>
+      );
+    }
+    
+    if (treinosDoDia.length === 4) {
+      return (
+        <div className="flex flex-col items-center gap-0.5">
+          <div className="flex gap-0.5">
+            {icons[0]}
+            {icons[1]}
+          </div>
+          <div className="flex gap-0.5">
+            {icons[2]}
+            {icons[3]}
+          </div>
+        </div>
+      );
+    }
+    
+    if (treinosDoDia.length === 5) {
+      return (
+        <div className="flex flex-col items-center gap-0.5">
+          <div className="flex gap-0.5">
+            {icons[0]}
+            {icons[1]}
+          </div>
+          <div className="flex justify-center">
+            {icons[2]}
+          </div>
+          <div className="flex gap-0.5">
+            {icons[3]}
+            {icons[4]}
+          </div>
+        </div>
+      );
+    }
+    
+    if (treinosDoDia.length >= 6) {
+      return (
+        <div className="flex flex-col items-center gap-0.5">
+          <div className="flex gap-0.5">
+            {icons[0]}
+            {icons[1]}
+            {icons[2]}
+          </div>
+          <div className="flex gap-0.5">
+            {icons[3]}
+            {icons[4]}
+            {icons[5]}
+          </div>
+        </div>
+      );
+    }
+    
+    return null;
   };
   
   // Render colored training divisions for calendar days
@@ -1350,30 +1446,58 @@ const getDadosGraficoLinha = () => {
   // TELA INICIAL
   if (tela === 'inicial') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className={`min-h-screen flex items-center justify-center p-4 ${
+        modoNoturno ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-gradient-to-br from-blue-50 to-indigo-100'
+      }`}>
         <div className="max-w-4xl w-full">
+          {/* Night Mode Toggle */}
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={() => setModoNoturno(!modoNoturno)}
+              className={`flex items-center gap-2 px-6 py-3 rounded-full shadow hover:shadow-md transition-all ${
+                modoNoturno ? 'bg-slate-700 text-amber-300' : 'bg-white text-indigo-600'
+              }`}
+              title={modoNoturno ? 'Modo Diurno' : 'Modo Noturno'}
+            >
+              {modoNoturno ? <Sun size={20} className="text-amber-300" /> : <Moon size={20} className="text-indigo-600" />}
+              <span className="font-semibold">{modoNoturno ? 'Modo Dia' : 'Modo Noite'}</span>
+            </button>
+          </div>
+          
           <div className="text-center mb-12">
-            <h1 className="text-5xl font-bold text-gray-800 mb-4 flex items-center justify-center gap-4">
-              <DollarSign className="text-blue-600" size={56} />
+            <h1 className={`text-5xl font-bold mb-4 flex items-center justify-center gap-4 ${
+              modoNoturno ? 'text-slate-100' : 'text-gray-800'
+            }`}>
+              <DollarSign className={modoNoturno ? 'text-blue-400' : 'text-blue-600'} size={56} />
               Hub de Funções
             </h1>
-            <p className="text-xl text-gray-600">Escolha uma opção para começar</p>
+            <p className={`text-xl ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>Escolha uma opção para começar</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Seção de Transferências - Navigate to Menu Page */}
             <button
               onClick={() => setTela('transferencias-menu')}
-              className="bg-white rounded-3xl shadow-xl p-8 hover:shadow-2xl transition-all transform hover:scale-105 group"
+              className={`rounded-3xl shadow-xl p-8 hover:shadow-2xl transition-all transform hover:scale-105 group ${
+                modoNoturno ? 'bg-slate-700' : 'bg-white'
+              }`}
             >
               <div className="flex flex-col items-center gap-4">
-                <div className="bg-blue-100 p-6 rounded-full group-hover:bg-blue-600 transition-colors">
-                  <DollarSign className="text-blue-600 group-hover:text-white transition-colors" size={48} />
+                <div className={`p-6 rounded-full transition-colors ${
+                  modoNoturno 
+                    ? 'bg-blue-900 group-hover:bg-blue-600' 
+                    : 'bg-blue-100 group-hover:bg-blue-600'
+                }`}>
+                  <DollarSign className={`transition-colors ${
+                    modoNoturno 
+                      ? 'text-blue-300 group-hover:text-white' 
+                      : 'text-blue-600 group-hover:text-white'
+                  }`} size={48} />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-800">
+                <h2 className={`text-2xl font-bold ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
                   Transferências
                 </h2>
-                <p className="text-gray-600 text-center">
+                <p className={`text-center ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
                   Gerencie suas transferências financeiras
                 </p>
               </div>
@@ -1382,14 +1506,24 @@ const getDadosGraficoLinha = () => {
             {/* Seção de Treino */}
             <button
               onClick={() => setTela('treino')}
-              className="bg-white rounded-3xl shadow-xl p-8 hover:shadow-2xl transition-all transform hover:scale-105 group"
+              className={`rounded-3xl shadow-xl p-8 hover:shadow-2xl transition-all transform hover:scale-105 group ${
+                modoNoturno ? 'bg-slate-700' : 'bg-white'
+              }`}
             >
               <div className="flex flex-col items-center gap-4">
-                <div className="bg-purple-100 p-6 rounded-full group-hover:bg-purple-600 transition-colors">
-                  <Dumbbell className="text-purple-600 group-hover:text-white transition-colors" size={48} />
+                <div className={`p-6 rounded-full transition-colors ${
+                  modoNoturno 
+                    ? 'bg-purple-900 group-hover:bg-purple-600' 
+                    : 'bg-purple-100 group-hover:bg-purple-600'
+                }`}>
+                  <Dumbbell className={`transition-colors ${
+                    modoNoturno 
+                      ? 'text-purple-300 group-hover:text-white' 
+                      : 'text-purple-600 group-hover:text-white'
+                  }`} size={48} />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-800">Treino</h2>
-                <p className="text-gray-600 text-center">
+                <h2 className={`text-2xl font-bold ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>Treino</h2>
+                <p className={`text-center ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
                   Acompanhe seus treinos com calendário interativo
                 </p>
               </div>
@@ -1679,30 +1813,61 @@ const getDadosGraficoLinha = () => {
     const diasNoMes = getDiasNoMes(calendarioTreino.mes, calendarioTreino.ano);
     const primeiroDia = getPrimeiroDiaSemana(calendarioTreino.mes, calendarioTreino.ano);
     
+    // Calcular estatísticas do mês
+    const calcularEstatisticasMes = () => {
+      const treinosMes = treinos.filter(t => {
+        const [dia, mes, ano] = t.data.split('/').map(Number);
+        return mes - 1 === calendarioTreino.mes && ano === calendarioTreino.ano;
+      });
+      
+      const diasComTreino = new Set(treinosMes.map(t => t.data)).size;
+      const tiposContagem = { cardio: 0, intensidade: 0 };
+      
+      treinosMes.forEach(t => {
+        // Only count valid training types from TIPOS_TREINO
+        if (t.tipo && TIPOS_TREINO[t.tipo]) {
+          tiposContagem[t.tipo] = (tiposContagem[t.tipo] || 0) + 1;
+        }
+      });
+      
+      // Calcular média de treinos por semana
+      const semanasNoMes = Math.ceil(diasNoMes / 7);
+      const mediaPorSemana = semanasNoMes > 0 ? (diasComTreino / semanasNoMes).toFixed(1) : 0;
+      
+      return {
+        diasComTreino,
+        totalTreinos: treinosMes.length,
+        tiposContagem,
+        mediaPorSemana
+      };
+    };
+    
+    const estatisticas = calcularEstatisticasMes();
+    
+    // Prepare chart data for donut chart
+    const chartData = [
+      { name: 'Cardio', value: estatisticas.tiposContagem.cardio || 0, color: TIPOS_TREINO.cardio.cor },
+      { name: 'Intensidade', value: estatisticas.tiposContagem.intensidade || 0, color: TIPOS_TREINO.intensidade.cor }
+    ].filter(item => item.value > 0);
+    
     return (
       <div className={`min-h-screen p-4 ${modoNoturno ? 'treino-background-noite' : 'treino-background-dia'}`} style={{ fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif' }}>
         <div className="max-w-5xl mx-auto">
           <div className="mb-6 flex items-center gap-3">
             <button
               onClick={() => setTela('inicial')}
-              className="flex items-center gap-2 bg-white px-6 py-3 rounded-full shadow hover:shadow-md transition-all"
+              className={`flex items-center gap-2 px-6 py-3 rounded-full shadow hover:shadow-md transition-all ${
+                modoNoturno ? 'bg-slate-700 text-slate-100' : 'bg-white'
+              }`}
             >
               <Home size={20} />
               Voltar para Início
             </button>
-            
-            {/* Night Mode Toggle */}
-            <button
-              onClick={() => setModoNoturno(!modoNoturno)}
-              className="flex items-center gap-2 bg-white px-6 py-3 rounded-full shadow hover:shadow-md transition-all"
-              title={modoNoturno ? 'Modo Diurno' : 'Modo Noturno'}
-            >
-              {modoNoturno ? <Sun size={20} className="text-amber-500" /> : <Moon size={20} className="text-indigo-600" />}
-              <span className="font-semibold">{modoNoturno ? 'Modo Dia' : 'Modo Noite'}</span>
-            </button>
           </div>
 
-          <div className="bg-white rounded-3xl shadow-xl p-4 sm:p-6 mb-6 relative">
+          <div className={`rounded-3xl shadow-xl p-4 sm:p-6 mb-6 relative ${
+            modoNoturno ? 'bg-slate-800/90' : 'bg-white'
+          }`}>
             {/* Reward System Button */}
             <button
               onClick={abrirSistemaRecompensas}
@@ -1712,8 +1877,10 @@ const getDadosGraficoLinha = () => {
               <Award size={24} />
             </button>
             
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3 pr-16">
-              <Dumbbell className="text-rose-500" size={28} />
+            <h1 className={`text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3 pr-16 ${
+              modoNoturno ? 'text-slate-100' : 'text-gray-800'
+            }`}>
+              <Dumbbell className={modoNoturno ? 'text-rose-400' : 'text-rose-500'} size={28} />
               <span className="hidden sm:inline">Calendário de Treinos</span>
               <span className="sm:hidden">Treinos</span>
             </h1>
@@ -1724,28 +1891,36 @@ const getDadosGraficoLinha = () => {
                 <button
                   type="button"
                   onClick={() => mudarMesTreino(-1)}
-                  className="p-2 sm:p-3 hover:bg-rose-50 rounded-full transition-colors"
+                  className={`p-2 sm:p-3 rounded-full transition-colors ${
+                    modoNoturno ? 'hover:bg-slate-700' : 'hover:bg-rose-50'
+                  }`}
                 >
-                  <span className="text-xl sm:text-2xl">←</span>
+                  <span className={`text-xl sm:text-2xl ${modoNoturno ? 'text-slate-200' : ''}`}>←</span>
                 </button>
 
-                <h2 className="text-lg sm:text-2xl font-bold text-gray-800">
+                <h2 className={`text-lg sm:text-2xl font-bold ${
+                  modoNoturno ? 'text-slate-100' : 'text-gray-800'
+                }`}>
                   {meses[calendarioTreino.mes]} {calendarioTreino.ano}
                 </h2>
 
                 <button
                   type="button"
                   onClick={() => mudarMesTreino(1)}
-                  className="p-2 sm:p-3 hover:bg-rose-50 rounded-full transition-colors"
+                  className={`p-2 sm:p-3 rounded-full transition-colors ${
+                    modoNoturno ? 'hover:bg-slate-700' : 'hover:bg-rose-50'
+                  }`}
                 >
-                  <span className="text-xl sm:text-2xl">→</span>
+                  <span className={`text-xl sm:text-2xl ${modoNoturno ? 'text-slate-200' : ''}`}>→</span>
                 </button>
               </div>
 
               {/* Grid do calendário - Mais compacto */}
               <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
                 {diasSemana.map(dia => (
-                  <div key={dia} className="text-center text-xs sm:text-sm font-bold text-gray-600 py-1">
+                  <div key={dia} className={`text-center text-xs sm:text-sm font-bold py-1 ${
+                    modoNoturno ? 'text-slate-300' : 'text-gray-600'
+                  }`}>
                     {dia}
                   </div>
                 ))}
@@ -1773,15 +1948,22 @@ const getDadosGraficoLinha = () => {
                       key={dia}
                       type="button"
                       onClick={() => selecionarDiaTreino(dia)}
-                      className={`relative h-14 sm:h-20 rounded-xl border-2 transition-all hover:shadow-md flex flex-col items-center justify-start p-1 sm:p-2 overflow-hidden
-                        ${isHoje ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-rose-300'}
-                        ${treinosDoDia.length === 1 ? 'bg-gradient-to-br from-purple-100 via-pink-100 to-rose-100' : 'bg-white'}
+                      className={`relative h-14 sm:h-20 rounded-xl border-2 transition-all hover:shadow-md flex flex-col items-center justify-center p-1 sm:p-2 overflow-hidden
+                        ${isHoje 
+                          ? (modoNoturno ? 'border-rose-400 bg-rose-900/30' : 'border-rose-400 bg-rose-50')
+                          : (modoNoturno 
+                              ? 'border-slate-600 hover:border-rose-400' 
+                              : 'border-gray-200 hover:border-rose-300')
+                        }
+                        ${temTreinos 
+                          ? (modoNoturno 
+                              ? 'bg-gradient-to-br from-purple-900/30 via-pink-900/30 to-rose-900/30' 
+                              : 'bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50')
+                          : (modoNoturno ? 'bg-slate-700/50' : 'bg-white')
+                        }
                       `}
                       aria-label={`${dia} de ${meses[calendarioTreino.mes]}${temRecompensa ? ', dia recompensado' : ''}${temTreinos ? `, ${treinosDoDia.length} treino(s)` : ''}`}
                     >
-                      {/* Colored training divisions for multiple trainings */}
-                      {treinosDoDia.length > 1 && renderTrainingDivisions(treinosDoDia, dia)}
-                      
                       {/* Indicador de Recompensa - Only show on days with training */}
                       {temRecompensa && temTreinos && (
                         <div 
@@ -1797,27 +1979,17 @@ const getDadosGraficoLinha = () => {
                         </div>
                       )}
                       
-                      <span className={`relative z-10 text-sm sm:text-base font-semibold mb-0.5 ${isHoje ? 'text-rose-600' : 'text-gray-700'}`}>
+                      <span className={`relative z-10 text-sm sm:text-base font-semibold mb-0.5 ${
+                        isHoje 
+                          ? (modoNoturno ? 'text-rose-400' : 'text-rose-600')
+                          : (modoNoturno ? 'text-slate-200' : 'text-gray-700')
+                      }`}>
                         {dia}
                       </span>
                       
                       {temTreinos && (
-                        <div className="relative z-10 flex flex-col gap-0.5 w-full">
-                          {treinosDoDia.slice(0, 2).map((treino, idx) => (
-                            <div 
-                              key={idx}
-                              className="flex items-center justify-center gap-0.5 text-[10px] sm:text-xs bg-white/80 rounded px-1"
-                              style={{ color: TIPOS_TREINO[treino.tipo]?.cor || '#666' }}
-                            >
-                              <Check size={10} className="sm:w-3 sm:h-3" />
-                              <span className="truncate font-medium">{treino.subcategoria}</span>
-                            </div>
-                          ))}
-                          {treinosDoDia.length > 2 && (
-                            <span className="text-[10px] sm:text-xs text-gray-500 font-semibold bg-white/80 rounded px-1">
-                              +{treinosDoDia.length - 2}
-                            </span>
-                          )}
+                        <div className="relative z-10 flex items-center justify-center w-full mt-0.5">
+                          {renderWorkoutIcons(treinosDoDia)}
                         </div>
                       )}
                     </button>
@@ -1827,17 +1999,158 @@ const getDadosGraficoLinha = () => {
             </div>
             
             {/* Legenda */}
-            <div className="flex gap-6 justify-center mt-6 p-4 bg-gradient-to-br from-rose-50 to-purple-50 rounded-xl">
+            <div className={`flex gap-6 justify-center mt-6 p-4 rounded-xl ${
+              modoNoturno 
+                ? 'bg-gradient-to-br from-rose-900/30 to-purple-900/30' 
+                : 'bg-gradient-to-br from-rose-50 to-purple-50'
+            }`}>
               {Object.entries(TIPOS_TREINO).map(([key, tipo]) => (
                 <div key={key} className="flex items-center gap-2">
-                  <div 
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: tipo.cor }}
-                  ></div>
-                  <span className="text-sm font-semibold text-gray-700">{tipo.nome}</span>
+                  {key === 'cardio' ? (
+                    <Activity size={16} style={{ color: tipo.cor }} />
+                  ) : (
+                    <Dumbbell size={16} style={{ color: tipo.cor }} />
+                  )}
+                  <span className={`text-sm font-semibold ${
+                    modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                  }`}>{tipo.nome}</span>
                 </div>
               ))}
             </div>
+          </div>
+          
+          {/* Statistics Panel */}
+          <div className={`rounded-3xl shadow-xl p-4 sm:p-6 mt-6 ${
+            modoNoturno ? 'bg-slate-800/90' : 'bg-white'
+          }`}>
+            <h2 className={`text-xl sm:text-2xl font-bold mb-4 flex items-center gap-2 ${
+              modoNoturno ? 'text-slate-100' : 'text-gray-800'
+            }`}>
+              <PieChart className={modoNoturno ? 'text-blue-400' : 'text-blue-600'} size={24} />
+              Estatísticas do Mês
+            </h2>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Dias de Treino */}
+              <div className={`p-4 rounded-xl ${
+                modoNoturno 
+                  ? 'bg-gradient-to-br from-blue-900/30 to-indigo-900/30' 
+                  : 'bg-gradient-to-br from-blue-50 to-indigo-50'
+              }`}>
+                <p className={`text-sm font-semibold mb-1 ${
+                  modoNoturno ? 'text-slate-300' : 'text-gray-600'
+                }`}>
+                  Dias de Treino
+                </p>
+                <p className={`text-3xl font-bold ${
+                  modoNoturno ? 'text-blue-400' : 'text-blue-600'
+                }`}>
+                  {estatisticas.diasComTreino}
+                </p>
+                <p className={`text-xs ${
+                  modoNoturno ? 'text-slate-400' : 'text-gray-500'
+                }`}>
+                  de {diasNoMes} dias
+                </p>
+              </div>
+              
+              {/* Total de Treinos */}
+              <div className={`p-4 rounded-xl ${
+                modoNoturno 
+                  ? 'bg-gradient-to-br from-purple-900/30 to-pink-900/30' 
+                  : 'bg-gradient-to-br from-purple-50 to-pink-50'
+              }`}>
+                <p className={`text-sm font-semibold mb-1 ${
+                  modoNoturno ? 'text-slate-300' : 'text-gray-600'
+                }`}>
+                  Total de Treinos
+                </p>
+                <p className={`text-3xl font-bold ${
+                  modoNoturno ? 'text-purple-400' : 'text-purple-600'
+                }`}>
+                  {estatisticas.totalTreinos}
+                </p>
+                <p className={`text-xs ${
+                  modoNoturno ? 'text-slate-400' : 'text-gray-500'
+                }`}>
+                  {estatisticas.tiposContagem.cardio || 0} cardio, {estatisticas.tiposContagem.intensidade || 0} intensidade
+                </p>
+              </div>
+              
+              {/* Média por Semana */}
+              <div className={`p-4 rounded-xl ${
+                modoNoturno 
+                  ? 'bg-gradient-to-br from-rose-900/30 to-orange-900/30' 
+                  : 'bg-gradient-to-br from-rose-50 to-orange-50'
+              }`}>
+                <p className={`text-sm font-semibold mb-1 ${
+                  modoNoturno ? 'text-slate-300' : 'text-gray-600'
+                }`}>
+                  Média por Semana
+                </p>
+                <p className={`text-3xl font-bold ${
+                  modoNoturno ? 'text-rose-400' : 'text-rose-600'
+                }`}>
+                  {estatisticas.mediaPorSemana}
+                </p>
+                <p className={`text-xs ${
+                  modoNoturno ? 'text-slate-400' : 'text-gray-500'
+                }`}>
+                  dias de treino
+                </p>
+              </div>
+            </div>
+            
+            {/* Mini Donut Chart with Recharts */}
+            {chartData.length > 0 && (
+              <div className="mt-6">
+                <h3 className={`text-lg font-semibold mb-3 ${
+                  modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                }`}>
+                  Distribuição de Treinos
+                </h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <RechartsPie>
+                    <Pie
+                      data={chartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </RechartsPie>
+                </ResponsiveContainer>
+                <div className="flex justify-center gap-6 mt-2">
+                  {(estatisticas.tiposContagem.cardio || 0) > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Activity size={16} style={{ color: TIPOS_TREINO.cardio.cor }} />
+                      <span className={`text-sm font-semibold ${
+                        modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                      }`}>
+                        Cardio: {estatisticas.tiposContagem.cardio || 0}
+                      </span>
+                    </div>
+                  )}
+                  {(estatisticas.tiposContagem.intensidade || 0) > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Dumbbell size={16} style={{ color: TIPOS_TREINO.intensidade.cor }} />
+                      <span className={`text-sm font-semibold ${
+                        modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                      }`}>
+                        Intensidade: {estatisticas.tiposContagem.intensidade || 0}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Modal de Recompensas */}
