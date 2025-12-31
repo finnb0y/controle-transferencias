@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, DollarSign, X, Download, Filter, PieChart, TrendingUp, Home, Plus, Eye, Dumbbell, Check, Edit2, Save } from 'lucide-react';
+import { Calendar, DollarSign, X, Download, Filter, PieChart, TrendingUp, Home, Plus, Eye, Dumbbell, Check, Edit2, Save, Award } from 'lucide-react';
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { supabase } from './supabaseClient';
 
@@ -50,6 +50,9 @@ const ControleTransferencias = () => {
   const [mostrarModalConfirmacao, setMostrarModalConfirmacao] = useState(false);
   const [mensagemModalConfirmacao, setMensagemModalConfirmacao] = useState('');
   const [callbackConfirmacao, setCallbackConfirmacao] = useState(null);
+  
+  // Estados para sistema de recompensas
+  const [mostrarRecompensas, setMostrarRecompensas] = useState(false);
   
 
 
@@ -504,19 +507,29 @@ const getDadosGraficoLinha = () => {
   
   const selecionarDiaTreino = (dia) => {
     const dataFormatada = `${String(dia).padStart(2, '0')}/${String(calendarioTreino.mes + 1).padStart(2, '0')}/${calendarioTreino.ano}`;
+    const treinosDoDia = getTreinosNaData(dia, calendarioTreino.mes, calendarioTreino.ano);
+    
     setDataSelecionadaTreino(dataFormatada);
-    setMostrarFormularioTreino(true);
-    setFormularioTreino({
-      tipo: '',
-      subcategoria: '',
-      horario_inicio: '',
-      horario_fim: '',
-      distancia: '',
-      observacoes: ''
-    });
-    setExercicios([]);
-    setExercicioAtual({ nome: '', repeticoes: '', duracao: '' });
-    setTreinoEditando(null);
+    
+    // Only open form if there are no existing trainings on this day
+    if (treinosDoDia.length === 0) {
+      setMostrarFormularioTreino(true);
+      setFormularioTreino({
+        tipo: '',
+        subcategoria: '',
+        horario_inicio: '',
+        horario_fim: '',
+        distancia: '',
+        observacoes: ''
+      });
+      setExercicios([]);
+      setExercicioAtual({ nome: '', repeticoes: '', duracao: '' });
+      setTreinoEditando(null);
+    } else {
+      // If there are existing trainings, just select the day (show the list below)
+      setMostrarFormularioTreino(false);
+      setTreinoEditando(null);
+    }
   };
   
   const adicionarTreino = async () => {
@@ -751,6 +764,82 @@ const getDadosGraficoLinha = () => {
     if (callbackConfirmacao) {
       callbackConfirmacao(false);
     }
+  };
+  
+  // Funções do Sistema de Recompensas
+  const obterSemanaAtual = () => {
+    const hoje = new Date();
+    const primeiroDiaSemana = new Date(hoje);
+    primeiroDiaSemana.setDate(hoje.getDate() - hoje.getDay()); // Domingo
+    
+    const diasSemana = [];
+    for (let i = 0; i < 7; i++) {
+      const dia = new Date(primeiroDiaSemana);
+      dia.setDate(primeiroDiaSemana.getDate() + i);
+      diasSemana.push({
+        data: dia,
+        dataFormatada: `${String(dia.getDate()).padStart(2, '0')}/${String(dia.getMonth() + 1).padStart(2, '0')}/${dia.getFullYear()}`
+      });
+    }
+    return diasSemana;
+  };
+  
+  const verificarConsistenciaTreino = (diasComTreino) => {
+    if (diasComTreino.length < 4) {
+      return {
+        valido: false,
+        mensagem: 'Você precisa de pelo menos 4 dias de treino por semana para ganhar uma recompensa.'
+      };
+    }
+    
+    // Ordenar dias por data
+    const diasOrdenados = [...diasComTreino].sort((a, b) => a.data - b.data);
+    
+    // Verificar lacunas entre treinos
+    let maiorLacuna = 0;
+    for (let i = 1; i < diasOrdenados.length; i++) {
+      const diff = Math.floor((diasOrdenados[i].data - diasOrdenados[i-1].data) / (1000 * 60 * 60 * 24));
+      if (diff > maiorLacuna) {
+        maiorLacuna = diff;
+      }
+    }
+    
+    // Se houver lacuna de mais de 3 dias, alertar
+    if (maiorLacuna > 3) {
+      return {
+        valido: true,
+        aviso: true,
+        mensagem: `Há ${maiorLacuna - 1} dias sem treino entre alguns de seus treinos. Tem certeza que deseja adicionar uma recompensa?`
+      };
+    }
+    
+    return { valido: true, aviso: false };
+  };
+  
+  const adicionarRecompensa = async () => {
+    const semana = obterSemanaAtual();
+    const diasComTreino = semana.filter(dia => {
+      return treinos.some(t => t.data === dia.dataFormatada);
+    });
+    
+    const validacao = verificarConsistenciaTreino(diasComTreino);
+    
+    if (!validacao.valido) {
+      mostrarBarraConfirmacao(validacao.mensagem, 'warning');
+      return;
+    }
+    
+    if (validacao.aviso) {
+      const confirmado = await mostrarModalConfirmacaoFn(validacao.mensagem);
+      if (!confirmado) {
+        return;
+      }
+    }
+    
+    // Aqui você pode implementar a lógica para salvar a recompensa
+    // Por exemplo, salvando no banco de dados ou apenas mostrando uma mensagem
+    mostrarBarraConfirmacao('🎉 Parabéns! Você ganhou uma recompensa por manter a consistência!', 'success');
+    setMostrarRecompensas(false);
   };
   
   // Renderiza componentes de notificação e confirmação
@@ -1192,8 +1281,8 @@ const getDadosGraficoLinha = () => {
     const primeiroDia = getPrimeiroDiaSemana(calendarioTreino.mes, calendarioTreino.ano);
     
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-4">
-        <div className="max-w-7xl mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 p-4" style={{ fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif' }}>
+        <div className="max-w-5xl mx-auto">
           <button
             onClick={() => setTela('inicial')}
             className="mb-6 flex items-center gap-2 bg-white px-6 py-3 rounded-full shadow hover:shadow-md transition-all"
@@ -1202,9 +1291,18 @@ const getDadosGraficoLinha = () => {
             Voltar para Início
           </button>
 
-          <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 mb-6">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
-              <Dumbbell className="text-purple-600" size={28} />
+          <div className="bg-white rounded-3xl shadow-xl p-4 sm:p-6 mb-6 relative">
+            {/* Reward System Button */}
+            <button
+              onClick={() => setMostrarRecompensas(!mostrarRecompensas)}
+              className="absolute top-4 right-4 bg-gradient-to-br from-amber-400 to-yellow-500 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110"
+              title="Sistema de Recompensas"
+            >
+              <Award size={24} />
+            </button>
+            
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3 pr-16">
+              <Dumbbell className="text-rose-500" size={28} />
               <span className="hidden sm:inline">Calendário de Treinos</span>
               <span className="sm:hidden">Treinos</span>
             </h1>
@@ -1215,7 +1313,7 @@ const getDadosGraficoLinha = () => {
                 <button
                   type="button"
                   onClick={() => mudarMesTreino(-1)}
-                  className="p-2 sm:p-3 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 sm:p-3 hover:bg-rose-50 rounded-full transition-colors"
                 >
                   <span className="text-xl sm:text-2xl">←</span>
                 </button>
@@ -1227,16 +1325,16 @@ const getDadosGraficoLinha = () => {
                 <button
                   type="button"
                   onClick={() => mudarMesTreino(1)}
-                  className="p-2 sm:p-3 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 sm:p-3 hover:bg-rose-50 rounded-full transition-colors"
                 >
                   <span className="text-xl sm:text-2xl">→</span>
                 </button>
               </div>
 
-              {/* Grid do calendário */}
+              {/* Grid do calendário - Mais compacto */}
               <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-2">
                 {diasSemana.map(dia => (
-                  <div key={dia} className="text-center text-xs sm:text-sm font-bold text-gray-600 py-1 sm:py-2">
+                  <div key={dia} className="text-center text-xs sm:text-sm font-bold text-gray-600 py-1">
                     {dia}
                   </div>
                 ))}
@@ -1245,7 +1343,7 @@ const getDadosGraficoLinha = () => {
               <div className="grid grid-cols-7 gap-1 sm:gap-2">
                 {/* Dias vazios antes do início do mês */}
                 {Array.from({ length: primeiroDia }).map((_, i) => (
-                  <div key={`vazio-${i}`} className="h-16 sm:h-24"></div>
+                  <div key={`vazio-${i}`} className="h-14 sm:h-20"></div>
                 ))}
                 
                 {/* Dias do mês */}
@@ -1261,21 +1359,21 @@ const getDadosGraficoLinha = () => {
                       key={dia}
                       type="button"
                       onClick={() => selecionarDiaTreino(dia)}
-                      className={`h-16 sm:h-24 rounded-lg sm:rounded-2xl border-2 transition-all hover:shadow-md flex flex-col items-center justify-start p-1 sm:p-2
-                        ${isHoje ? 'border-purple-600 bg-purple-50' : 'border-gray-200 hover:border-purple-300'}
-                        ${treinosDoDia.length > 0 ? 'bg-gradient-to-br from-purple-100 to-pink-100' : 'bg-white'}
+                      className={`h-14 sm:h-20 rounded-xl border-2 transition-all hover:shadow-md flex flex-col items-center justify-start p-1 sm:p-2
+                        ${isHoje ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-rose-300'}
+                        ${treinosDoDia.length > 0 ? 'bg-gradient-to-br from-purple-100 via-pink-100 to-rose-100' : 'bg-white'}
                       `}
                     >
-                      <span className={`text-sm sm:text-lg font-semibold mb-0.5 sm:mb-1 ${isHoje ? 'text-purple-600' : 'text-gray-700'}`}>
+                      <span className={`text-sm sm:text-base font-semibold mb-0.5 ${isHoje ? 'text-rose-600' : 'text-gray-700'}`}>
                         {dia}
                       </span>
                       
                       {treinosDoDia.length > 0 && (
-                        <div className="flex flex-col gap-0.5 sm:gap-1 w-full">
+                        <div className="flex flex-col gap-0.5 w-full">
                           {treinosDoDia.slice(0, 2).map((treino, idx) => (
                             <div 
                               key={idx}
-                              className="flex items-center justify-center gap-0.5 sm:gap-1 text-[10px] sm:text-xs"
+                              className="flex items-center justify-center gap-0.5 text-[10px] sm:text-xs"
                               style={{ color: TIPOS_TREINO[treino.tipo]?.cor || '#666' }}
                             >
                               <Check size={10} className="sm:w-3 sm:h-3" />
@@ -1296,7 +1394,7 @@ const getDadosGraficoLinha = () => {
             </div>
             
             {/* Legenda */}
-            <div className="flex gap-6 justify-center mt-6 p-4 bg-gray-50 rounded-lg">
+            <div className="flex gap-6 justify-center mt-6 p-4 bg-gradient-to-br from-rose-50 to-purple-50 rounded-xl">
               {Object.entries(TIPOS_TREINO).map(([key, tipo]) => (
                 <div key={key} className="flex items-center gap-2">
                   <div 
@@ -1308,11 +1406,101 @@ const getDadosGraficoLinha = () => {
               ))}
             </div>
           </div>
+          
+          {/* Modal de Recompensas */}
+          {mostrarRecompensas && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-gradient-to-br from-white to-amber-50 rounded-3xl shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    <Award className="text-amber-500" size={32} />
+                    Sistema de Recompensas
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setMostrarRecompensas(false)}
+                    className="text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+                
+                <p className="text-gray-600 mb-6">
+                  Acompanhe seus treinos desta semana e ganhe recompensas mantendo a consistência!
+                </p>
+                
+                {/* Dias da semana atual com treinos */}
+                <div className="space-y-3 mb-6">
+                  <h3 className="text-lg font-bold text-gray-800">Treinos desta Semana</h3>
+                  {obterSemanaAtual().map((dia, index) => {
+                    const temTreino = treinos.some(t => t.data === dia.dataFormatada);
+                    const treinosDoDia = treinos.filter(t => t.data === dia.dataFormatada);
+                    const diaSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][index];
+                    
+                    return (
+                      <div
+                        key={index}
+                        className={`p-4 rounded-xl border-2 transition-all ${
+                          temTreino 
+                            ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300' 
+                            : 'bg-gray-50 border-gray-200'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                              temTreino ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'
+                            }`}>
+                              {temTreino ? <Check size={20} /> : diaSemana}
+                            </div>
+                            <div>
+                              <p className="font-bold text-gray-800">
+                                {diaSemana} - {dia.dataFormatada}
+                              </p>
+                              {temTreino && (
+                                <p className="text-sm text-gray-600">
+                                  {treinosDoDia.length} treino(s): {treinosDoDia.map(t => t.subcategoria).join(', ')}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {/* Resumo e botão de recompensa */}
+                <div className="bg-gradient-to-br from-amber-100 to-yellow-100 p-4 rounded-xl border-2 border-amber-300 mb-4">
+                  <p className="text-sm font-semibold text-gray-800 mb-2">
+                    📊 Resumo da Semana:
+                  </p>
+                  <p className="text-gray-700">
+                    • Total de dias com treino: <strong>{obterSemanaAtual().filter(dia => treinos.some(t => t.data === dia.dataFormatada)).length}</strong> de 7
+                  </p>
+                  <p className="text-gray-700">
+                    • Dias de descanso: <strong>{7 - obterSemanaAtual().filter(dia => treinos.some(t => t.data === dia.dataFormatada)).length}</strong>
+                  </p>
+                  <p className="text-xs text-gray-600 mt-2">
+                    💡 Para ganhar recompensa: mínimo 4 dias de treino com até 2 dias de descanso
+                  </p>
+                </div>
+                
+                <button
+                  onClick={adicionarRecompensa}
+                  className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white py-4 rounded-2xl font-bold text-lg hover:from-amber-600 hover:to-yellow-600 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                >
+                  <Award size={24} />
+                  Reivindicar Recompensa
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Formulário de Treino como Overlay/Modal */}
           {mostrarFormularioTreino && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-3xl shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="bg-gradient-to-br from-white to-purple-50 rounded-3xl shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-2xl font-bold text-gray-800">
                     {treinoEditando ? 'Editar Treino' : 'Adicionar Treino'}
@@ -1377,7 +1565,7 @@ const getDadosGraficoLinha = () => {
                       <select
                         value={formularioTreino.subcategoria}
                         onChange={(e) => setFormularioTreino({ ...formularioTreino, subcategoria: e.target.value })}
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none text-lg"
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-rose-400 focus:outline-none text-lg"
                       >
                         <option value="">Selecione...</option>
                         {TIPOS_TREINO[formularioTreino.tipo].subcategorias.map(sub => (
@@ -1389,7 +1577,7 @@ const getDadosGraficoLinha = () => {
 
                   {/* Seção de Exercícios Múltiplos para Funcional */}
                   {formularioTreino.subcategoria === 'Funcional' && (
-                    <div className="bg-purple-50 p-4 rounded-xl border-2 border-purple-200">
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl border-2 border-purple-200">
                       <h3 className="text-lg font-bold text-gray-800 mb-3">Exercícios</h3>
                       
                       {/* Lista de exercícios adicionados */}
@@ -1428,7 +1616,7 @@ const getDadosGraficoLinha = () => {
                             value={exercicioAtual.nome}
                             onChange={(e) => setExercicioAtual({ ...exercicioAtual, nome: e.target.value })}
                             placeholder="Ex: Prancha, Abdominais..."
-                            className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
+                            className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-400 focus:outline-none"
                           />
                         </div>
                         
@@ -1442,7 +1630,7 @@ const getDadosGraficoLinha = () => {
                               value={exercicioAtual.repeticoes}
                               onChange={(e) => setExercicioAtual({ ...exercicioAtual, repeticoes: e.target.value })}
                               placeholder="Ex: 15"
-                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
+                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-400 focus:outline-none"
                             />
                           </div>
                           
@@ -1455,7 +1643,7 @@ const getDadosGraficoLinha = () => {
                               value={exercicioAtual.duracao}
                               onChange={(e) => setExercicioAtual({ ...exercicioAtual, duracao: e.target.value })}
                               placeholder="Ex: 60"
-                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
+                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-400 focus:outline-none"
                             />
                           </div>
                         </div>
@@ -1463,7 +1651,7 @@ const getDadosGraficoLinha = () => {
                         <button
                           type="button"
                           onClick={adicionarExercicio}
-                          className="w-full bg-purple-600 text-white py-2 rounded-xl font-semibold hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                          className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 rounded-xl font-semibold hover:from-purple-600 hover:to-pink-600 transition-colors flex items-center justify-center gap-2"
                         >
                           <Plus size={18} />
                           Adicionar Exercício
@@ -1483,7 +1671,7 @@ const getDadosGraficoLinha = () => {
                           type="time"
                           value={formularioTreino.horario_inicio}
                           onChange={(e) => setFormularioTreino({ ...formularioTreino, horario_inicio: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none text-lg"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-rose-400 focus:outline-none text-lg"
                         />
                       </div>
 
@@ -1495,7 +1683,7 @@ const getDadosGraficoLinha = () => {
                           type="time"
                           value={formularioTreino.horario_fim}
                           onChange={(e) => setFormularioTreino({ ...formularioTreino, horario_fim: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none text-lg"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-rose-400 focus:outline-none text-lg"
                         />
                       </div>
 
@@ -1509,7 +1697,7 @@ const getDadosGraficoLinha = () => {
                           value={formularioTreino.distancia}
                           onChange={(e) => setFormularioTreino({ ...formularioTreino, distancia: e.target.value })}
                           placeholder="Ex: 5.5"
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none text-lg"
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-rose-400 focus:outline-none text-lg"
                         />
                       </div>
                     </div>
@@ -1517,7 +1705,7 @@ const getDadosGraficoLinha = () => {
                   
                   {/* Mostrar duração calculada se ambos horários estiverem preenchidos */}
                   {formularioTreino.horario_inicio && formularioTreino.horario_fim && (
-                    <div className="bg-purple-50 p-3 rounded-lg border-2 border-purple-200">
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-3 rounded-lg border-2 border-purple-200">
                       <p className="text-sm font-semibold text-gray-700">
                         Duração calculada: <span className="text-purple-600">{calcularDuracao(formularioTreino.horario_inicio, formularioTreino.horario_fim)} minutos</span>
                       </p>
@@ -1534,7 +1722,7 @@ const getDadosGraficoLinha = () => {
                       onChange={(e) => setFormularioTreino({ ...formularioTreino, observacoes: e.target.value })}
                       placeholder="Ex: Treino intenso, boa recuperação..."
                       rows="3"
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none text-lg"
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-rose-400 focus:outline-none text-lg"
                     />
                   </div>
 
@@ -1543,7 +1731,7 @@ const getDadosGraficoLinha = () => {
                     <button
                       type="button"
                       onClick={treinoEditando ? salvarEdicaoTreino : adicionarTreino}
-                      className="flex-1 bg-purple-600 text-white py-3 rounded-2xl font-bold text-lg hover:bg-purple-700 transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                      className="flex-1 bg-gradient-to-r from-rose-500 to-pink-500 text-white py-3 rounded-2xl font-bold text-lg hover:from-rose-600 hover:to-pink-600 transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                     >
                       <Save size={20} />
                       {treinoEditando ? 'Salvar Alterações' : 'Adicionar Treino'}
@@ -1576,7 +1764,7 @@ const getDadosGraficoLinha = () => {
 
           {/* Lista de Treinos do Dia Selecionado */}
           {dataSelecionadaTreino && !mostrarFormularioTreino && (
-            <div className="bg-white rounded-2xl shadow-xl p-6">
+            <div className="bg-white rounded-3xl shadow-xl p-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-4">
                 Treinos de {dataSelecionadaTreino}
               </h2>
@@ -1596,7 +1784,7 @@ const getDadosGraficoLinha = () => {
                   ).map((treino) => (
                     <div
                       key={treino.id}
-                      className="border-2 border-gray-200 rounded-xl p-4 hover:shadow-md transition-all"
+                      className="border-2 border-gray-200 rounded-2xl p-4 hover:shadow-md transition-all"
                       style={{ borderLeftWidth: '6px', borderLeftColor: TIPOS_TREINO[treino.tipo]?.cor }}
                     >
                       <div className="flex justify-between items-start">
@@ -1610,7 +1798,7 @@ const getDadosGraficoLinha = () => {
                           
                           {/* Display exercises for functional training */}
                           {treino.subcategoria === 'Funcional' && treino.exercicios && treino.exercicios.length > 0 && (
-                            <div className="mt-3 bg-purple-50 p-3 rounded-lg">
+                            <div className="mt-3 bg-gradient-to-br from-purple-50 to-pink-50 p-3 rounded-lg">
                               <p className="text-sm font-semibold text-gray-700 mb-2">Exercícios:</p>
                               <ul className="space-y-1">
                                 {treino.exercicios.map((ex, idx) => (
@@ -1694,7 +1882,7 @@ const getDadosGraficoLinha = () => {
                   setExercicioAtual({ nome: '', repeticoes: '', duracao: '' });
                   setTreinoEditando(null);
                 }}
-                className="w-full mt-6 bg-purple-600 text-white py-3 rounded-2xl font-bold text-lg hover:bg-purple-700 transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                className="w-full mt-6 bg-gradient-to-r from-rose-500 to-pink-500 text-white py-3 rounded-2xl font-bold text-lg hover:from-rose-600 hover:to-pink-600 transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
               >
                 <Plus size={20} />
                 Adicionar Mais um Treino
