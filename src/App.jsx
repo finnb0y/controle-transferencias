@@ -1824,7 +1824,10 @@ const getDadosGraficoLinha = () => {
       const tiposContagem = { cardio: 0, intensidade: 0 };
       
       treinosMes.forEach(t => {
-        tiposContagem[t.tipo] = (tiposContagem[t.tipo] || 0) + 1;
+        // Only count valid training types
+        if (t.tipo && (t.tipo === 'cardio' || t.tipo === 'intensidade')) {
+          tiposContagem[t.tipo] = (tiposContagem[t.tipo] || 0) + 1;
+        }
       });
       
       // Calcular média de treinos por semana
@@ -2064,7 +2067,7 @@ const getDadosGraficoLinha = () => {
                 <p className={`text-xs ${
                   modoNoturno ? 'text-slate-400' : 'text-gray-500'
                 }`}>
-                  {estatisticas.tiposContagem.cardio} cardio, {estatisticas.tiposContagem.intensidade} intensidade
+                  {estatisticas.tiposContagem.cardio || 0} cardio, {estatisticas.tiposContagem.intensidade || 0} intensidade
                 </p>
               </div>
               
@@ -2093,7 +2096,13 @@ const getDadosGraficoLinha = () => {
             </div>
             
             {/* Mini Donut Chart with Recharts */}
-            {(estatisticas.tiposContagem.cardio > 0 || estatisticas.tiposContagem.intensidade > 0) && (
+            {(estatisticas.tiposContagem.cardio > 0 || estatisticas.tiposContagem.intensidade > 0) && (() => {
+              const chartData = [
+                { name: 'Cardio', value: estatisticas.tiposContagem.cardio || 0, color: TIPOS_TREINO.cardio.cor },
+                { name: 'Intensidade', value: estatisticas.tiposContagem.intensidade || 0, color: TIPOS_TREINO.intensidade.cor }
+              ].filter(item => item.value > 0);
+              
+              return (
               <div className="mt-6">
                 <h3 className={`text-lg font-semibold mb-3 ${
                   modoNoturno ? 'text-slate-200' : 'text-gray-700'
@@ -2103,10 +2112,7 @@ const getDadosGraficoLinha = () => {
                 <ResponsiveContainer width="100%" height={200}>
                   <RechartsPie>
                     <Pie
-                      data={[
-                        { name: 'Cardio', value: estatisticas.tiposContagem.cardio, color: TIPOS_TREINO.cardio.cor },
-                        { name: 'Intensidade', value: estatisticas.tiposContagem.intensidade, color: TIPOS_TREINO.intensidade.cor }
-                      ].filter(item => item.value > 0)}
+                      data={chartData}
                       cx="50%"
                       cy="50%"
                       innerRadius={50}
@@ -2114,10 +2120,7 @@ const getDadosGraficoLinha = () => {
                       paddingAngle={5}
                       dataKey="value"
                     >
-                      {[
-                        { name: 'Cardio', value: estatisticas.tiposContagem.cardio, color: TIPOS_TREINO.cardio.cor },
-                        { name: 'Intensidade', value: estatisticas.tiposContagem.intensidade, color: TIPOS_TREINO.intensidade.cor }
-                      ].filter(item => item.value > 0).map((entry, index) => (
+                      {chartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -2125,29 +2128,30 @@ const getDadosGraficoLinha = () => {
                   </RechartsPie>
                 </ResponsiveContainer>
                 <div className="flex justify-center gap-6 mt-2">
-                  {estatisticas.tiposContagem.cardio > 0 && (
+                  {(estatisticas.tiposContagem.cardio || 0) > 0 && (
                     <div className="flex items-center gap-2">
                       <Activity size={16} style={{ color: TIPOS_TREINO.cardio.cor }} />
                       <span className={`text-sm font-semibold ${
                         modoNoturno ? 'text-slate-200' : 'text-gray-700'
                       }`}>
-                        Cardio: {estatisticas.tiposContagem.cardio}
+                        Cardio: {estatisticas.tiposContagem.cardio || 0}
                       </span>
                     </div>
                   )}
-                  {estatisticas.tiposContagem.intensidade > 0 && (
+                  {(estatisticas.tiposContagem.intensidade || 0) > 0 && (
                     <div className="flex items-center gap-2">
                       <Dumbbell size={16} style={{ color: TIPOS_TREINO.intensidade.cor }} />
                       <span className={`text-sm font-semibold ${
                         modoNoturno ? 'text-slate-200' : 'text-gray-700'
                       }`}>
-                        Intensidade: {estatisticas.tiposContagem.intensidade}
+                        Intensidade: {estatisticas.tiposContagem.intensidade || 0}
                       </span>
                     </div>
                   )}
                 </div>
               </div>
-            )}
+              );
+            })()}
           </div>
           
           {/* Modal de Recompensas */}
