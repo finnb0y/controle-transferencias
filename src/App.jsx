@@ -1342,14 +1342,16 @@ const getDadosGraficoLinha = () => {
     <>
       {/* Barra de Confirmação */}
       {mostrarConfirmacao && (
-        <div className={`fixed bottom-0 left-0 right-0 bg-white shadow-2xl border-t-4 p-4 flex items-center justify-between z-50 animate-slide-up ${
+        <div className={`fixed bottom-0 left-0 right-0 shadow-2xl border-t-4 p-4 flex items-center justify-between z-50 animate-slide-up ${
+          modoNoturno ? 'bg-slate-800' : 'bg-white'
+        } ${
           tipoConfirmacao === 'success' ? 'border-green-500' :
           tipoConfirmacao === 'error' ? 'border-red-500' :
           tipoConfirmacao === 'warning' ? 'border-yellow-500' :
           'border-blue-500'
         }`}>
           <div className="flex-1">
-            <p className="text-gray-800 font-semibold">{mensagemConfirmacao}</p>
+            <p className={`font-semibold ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>{mensagemConfirmacao}</p>
             <div className={`absolute top-0 left-0 right-0 h-1 animate-shrink-width ${
               tipoConfirmacao === 'success' ? 'bg-green-500' :
               tipoConfirmacao === 'error' ? 'bg-red-500' :
@@ -1359,7 +1361,11 @@ const getDadosGraficoLinha = () => {
           </div>
           <button
             onClick={fecharBarraConfirmacao}
-            className="ml-4 text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className={`ml-4 p-2 rounded-full transition-colors ${
+              modoNoturno 
+                ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700' 
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+            }`}
           >
             <X size={20} />
           </button>
@@ -1369,9 +1375,11 @@ const getDadosGraficoLinha = () => {
       {/* Modal de Confirmação */}
       {mostrarModalConfirmacao && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold text-gray-800 mb-4">Confirmação</h3>
-            <p className="text-gray-700 mb-6">{mensagemModalConfirmacao}</p>
+          <div className={`rounded-3xl shadow-2xl p-6 max-w-md w-full ${
+            modoNoturno ? 'bg-slate-800' : 'bg-white'
+          }`}>
+            <h3 className={`text-xl font-bold mb-4 ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>Confirmação</h3>
+            <p className={`mb-6 ${modoNoturno ? 'text-slate-200' : 'text-gray-700'}`}>{mensagemModalConfirmacao}</p>
             <div className="flex gap-3">
               <button
                 onClick={confirmarAcao}
@@ -1381,7 +1389,11 @@ const getDadosGraficoLinha = () => {
               </button>
               <button
                 onClick={cancelarAcao}
-                className="flex-1 border-2 border-gray-300 py-3 rounded-2xl font-bold hover:bg-gray-100 transition-colors"
+                className={`flex-1 border-2 py-3 rounded-2xl font-bold transition-colors ${
+                  modoNoturno 
+                    ? 'border-slate-600 text-slate-200 hover:bg-slate-700' 
+                    : 'border-gray-300 hover:bg-gray-100'
+                }`}
               >
                 Cancelar
               </button>
