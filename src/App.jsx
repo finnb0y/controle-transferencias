@@ -2156,10 +2156,14 @@ const getDadosGraficoLinha = () => {
           {/* Modal de Recompensas */}
           {mostrarRecompensas && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-gradient-to-br from-white to-amber-50 rounded-3xl shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className={`rounded-3xl shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto ${
+                modoNoturno 
+                  ? 'bg-gradient-to-br from-slate-800 to-slate-900' 
+                  : 'bg-gradient-to-br from-white to-amber-50'
+              }`}>
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                    <Award className="text-amber-500" size={32} />
+                  <h2 className={`text-2xl font-bold flex items-center gap-2 ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
+                    <Award className={modoNoturno ? 'text-amber-400' : 'text-amber-500'} size={32} />
                     Sistema de Recompensas
                   </h2>
                   <button
@@ -2170,20 +2174,28 @@ const getDadosGraficoLinha = () => {
                       setDiasMarcadosRecompensa({});
                       setTentativasRecompensa(0);
                     }}
-                    className="text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    className={`p-2 rounded-full transition-colors ${
+                      modoNoturno 
+                        ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700' 
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    }`}
                   >
                     <X size={24} />
                   </button>
                 </div>
                 
-                <p className="text-gray-600 mb-4">
+                <p className={`mb-4 ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
                   Acompanhe seus treinos e ganhe recompensas mantendo a consistência!
                 </p>
                 
                 {/* Seletor de Semana */}
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border-2 border-blue-200 mb-4">
+                <div className={`p-4 rounded-xl border-2 mb-4 ${
+                  modoNoturno 
+                    ? 'bg-blue-900/30 border-blue-700' 
+                    : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200'
+                }`}>
                   <div className="flex justify-between items-center mb-2">
-                    <p className="text-sm font-semibold text-gray-800">
+                    <p className={`text-sm font-semibold ${modoNoturno ? 'text-slate-200' : 'text-gray-800'}`}>
                       📅 Semana Selecionada:
                     </p>
                     <button
@@ -2193,13 +2205,13 @@ const getDadosGraficoLinha = () => {
                       Selecionar Outra Semana
                     </button>
                   </div>
-                  <p className="text-gray-700">
+                  <p className={modoNoturno ? 'text-slate-200' : 'text-gray-700'}>
                     {semanaSelecionadaRecompensa 
                       ? `${obterSemanaAtual()[0].dataFormatada} - ${obterSemanaAtual()[6].dataFormatada}`
                       : 'Semana atual'}
                   </p>
                   {!verificarSemanaCompleta(obterSemanaAtual()).completa && (
-                    <p className="text-xs text-amber-600 mt-2">
+                    <p className={`text-xs mt-2 ${modoNoturno ? 'text-amber-400' : 'text-amber-600'}`}>
                       ⚠️ Esta semana tem apenas {verificarSemanaCompleta(obterSemanaAtual()).diasNoMes} dias no mês corrente
                     </p>
                   )}
@@ -2207,23 +2219,27 @@ const getDadosGraficoLinha = () => {
                 
                 {/* Calendário compacto para seleção de data */}
                 {mostrarSeletorData && (
-                  <div className="bg-white border-2 border-gray-300 rounded-xl p-4 mb-4 shadow-lg">
-                    <h3 className="text-sm font-bold text-gray-800 mb-3">Selecione um dia para ver sua semana:</h3>
+                  <div className={`border-2 rounded-xl p-4 mb-4 shadow-lg ${
+                    modoNoturno 
+                      ? 'bg-slate-800 border-slate-600' 
+                      : 'bg-white border-gray-300'
+                  }`}>
+                    <h3 className={`text-sm font-bold mb-3 ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>Selecione um dia para ver sua semana:</h3>
                     <div className="flex items-center justify-between mb-3">
                       <button
                         type="button"
                         onClick={() => mudarMesTreino(-1)}
-                        className="p-2 hover:bg-gray-100 rounded-full"
+                        className={`p-2 rounded-full ${modoNoturno ? 'hover:bg-slate-700' : 'hover:bg-gray-100'}`}
                       >
                         ←
                       </button>
-                      <span className="font-bold text-gray-800">
+                      <span className={`font-bold ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
                         {meses[calendarioTreino.mes]} {calendarioTreino.ano}
                       </span>
                       <button
                         type="button"
                         onClick={() => mudarMesTreino(1)}
-                        className="p-2 hover:bg-gray-100 rounded-full"
+                        className={`p-2 rounded-full ${modoNoturno ? 'hover:bg-slate-700' : 'hover:bg-gray-100'}`}
                       >
                         →
                       </button>
@@ -2231,7 +2247,7 @@ const getDadosGraficoLinha = () => {
                     
                     <div className="grid grid-cols-7 gap-1 mb-2">
                       {diasSemana.map(dia => (
-                        <div key={dia} className="text-center text-xs font-bold text-gray-600">
+                        <div key={dia} className={`text-center text-xs font-bold ${modoNoturno ? 'text-slate-400' : 'text-gray-600'}`}>
                           {dia}
                         </div>
                       ))}
@@ -2254,9 +2270,13 @@ const getDadosGraficoLinha = () => {
                             disabled={!temTreinoNaSemana}
                             className={`h-8 rounded-lg border text-sm transition-all ${
                               temTreinoNaSemana 
-                                ? 'hover:bg-blue-100 hover:border-blue-400 cursor-pointer' 
-                                : 'opacity-30 cursor-not-allowed border-gray-300'
-                            }`}
+                                ? modoNoturno 
+                                  ? 'hover:bg-blue-900/30 hover:border-blue-400 cursor-pointer border-slate-600' 
+                                  : 'hover:bg-blue-100 hover:border-blue-400 cursor-pointer' 
+                                : modoNoturno 
+                                  ? 'opacity-30 cursor-not-allowed border-slate-700' 
+                                  : 'opacity-30 cursor-not-allowed border-gray-300'
+                            } ${modoNoturno ? 'text-slate-200' : ''}`}
                             title={temTreinoNaSemana ? 'Selecionar esta semana' : 'Esta semana não possui treinos'}
                           >
                             {dia}
@@ -2269,10 +2289,10 @@ const getDadosGraficoLinha = () => {
                 
                 {/* Dias da semana selecionada com treinos - INTERATIVO */}
                 <div className="space-y-3 mb-6">
-                  <h3 className="text-lg font-bold text-gray-800">
+                  <h3 className={`text-lg font-bold ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
                     Treinos da Semana Selecionada
                   </h3>
-                  <p className="text-xs text-gray-600 mb-2">
+                  <p className={`text-xs mb-2 ${modoNoturno ? 'text-slate-400' : 'text-gray-600'}`}>
                     💡 Clique nos dias para marcar/desmarcar manualmente
                   </p>
                   {obterSemanaAtual().map((dia, index) => {
@@ -2288,33 +2308,41 @@ const getDadosGraficoLinha = () => {
                         onClick={() => toggleDiaMarcado(dia.dataFormatada)}
                         className={`w-full p-4 rounded-xl border-2 transition-all cursor-pointer hover:shadow-md ${
                           estaMarcado 
-                            ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300' 
-                            : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                            ? modoNoturno 
+                              ? 'bg-gradient-to-br from-green-900/50 to-emerald-900/50 border-green-600' 
+                              : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300' 
+                            : modoNoturno 
+                              ? 'bg-slate-700/50 border-slate-600 hover:border-slate-500' 
+                              : 'bg-gray-50 border-gray-200 hover:border-gray-300'
                         }`}
                       >
                         <div className="flex justify-between items-center">
                           <div className="flex items-center gap-3">
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                              estaMarcado ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'
+                              estaMarcado 
+                                ? 'bg-green-500 text-white' 
+                                : modoNoturno 
+                                  ? 'bg-slate-600 text-slate-300' 
+                                  : 'bg-gray-300 text-gray-600'
                             }`}>
                               {estaMarcado ? <Check size={20} /> : dia.diaSemana}
                             </div>
                             <div className="text-left">
-                              <p className="font-bold text-gray-800">
+                              <p className={`font-bold ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
                                 {dia.diaSemana} - {dia.dataFormatada}
                               </p>
                               {temTreinoReal && (
-                                <p className="text-sm text-gray-600">
+                                <p className={`text-sm ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
                                   {treinosDoDia.length} treino(s): {treinosDoDia.map(t => t.subcategoria).join(', ')}
                                 </p>
                               )}
                               {marcadoManualmente && !temTreinoReal && estaMarcado && (
-                                <p className="text-xs text-blue-600 font-semibold">
+                                <p className={`text-xs font-semibold ${modoNoturno ? 'text-blue-400' : 'text-blue-600'}`}>
                                   ✓ Marcado manualmente
                                 </p>
                               )}
                               {marcadoManualmente && temTreinoReal && !estaMarcado && (
-                                <p className="text-xs text-red-600 font-semibold">
+                                <p className={`text-xs font-semibold ${modoNoturno ? 'text-red-400' : 'text-red-600'}`}>
                                   ✗ Desmarcado manualmente
                                 </p>
                               )}
@@ -2327,17 +2355,21 @@ const getDadosGraficoLinha = () => {
                 </div>
                 
                 {/* Resumo e botão de recompensa */}
-                <div className="bg-gradient-to-br from-amber-100 to-yellow-100 p-4 rounded-xl border-2 border-amber-300 mb-4">
-                  <p className="text-sm font-semibold text-gray-800 mb-2">
+                <div className={`p-4 rounded-xl border-2 mb-4 ${
+                  modoNoturno 
+                    ? 'bg-amber-900/30 border-amber-700' 
+                    : 'bg-gradient-to-br from-amber-100 to-yellow-100 border-amber-300'
+                }`}>
+                  <p className={`text-sm font-semibold mb-2 ${modoNoturno ? 'text-slate-200' : 'text-gray-800'}`}>
                     📊 Resumo da Semana:
                   </p>
-                  <p className="text-gray-700">
+                  <p className={modoNoturno ? 'text-slate-200' : 'text-gray-700'}>
                     • Total de dias marcados: <strong>{obterSemanaAtual().filter(dia => diaEstaMarcado(dia.dataFormatada)).length}</strong> de {obterSemanaAtual().length}
                   </p>
-                  <p className="text-gray-700">
+                  <p className={modoNoturno ? 'text-slate-200' : 'text-gray-700'}>
                     • Dias de descanso: <strong>{obterSemanaAtual().length - obterSemanaAtual().filter(dia => diaEstaMarcado(dia.dataFormatada)).length}</strong>
                   </p>
-                  <p className="text-xs text-gray-600 mt-2">
+                  <p className={`text-xs mt-2 ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
                     💡 Para ganhar recompensa: mínimo <strong>{calcularMinimoTreinos(obterSemanaAtual())}</strong> dias de treino
                     {!verificarSemanaCompleta(obterSemanaAtual()).completa && 
                       ` (ajustado para semana incompleta)`
@@ -2359,31 +2391,41 @@ const getDadosGraficoLinha = () => {
           {/* Modal de Treinos Insuficientes */}
           {mostrarModalInsuficiente && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
-              <div className="bg-white rounded-3xl shadow-2xl p-6 max-w-md w-full">
-                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <div className={`rounded-3xl shadow-2xl p-6 max-w-md w-full ${
+                modoNoturno ? 'bg-slate-800' : 'bg-white'
+              }`}>
+                <h3 className={`text-xl font-bold mb-4 flex items-center gap-2 ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
                   <X className="text-red-500" size={28} />
                   Treinos Insuficientes
                 </h3>
-                <p className="text-gray-700 mb-6">{mensagemModalInsuficiente}</p>
+                <p className={`mb-6 ${modoNoturno ? 'text-slate-200' : 'text-gray-700'}`}>{mensagemModalInsuficiente}</p>
                 
                 {tentativasRecompensa === 1 ? (
                   <div className="flex gap-3">
                     <button
                       onClick={fecharModalInsuficiente}
-                      className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-2xl font-bold hover:bg-gray-300 transition-colors"
+                      className={`flex-1 py-3 rounded-2xl font-bold transition-colors ${
+                        modoNoturno 
+                          ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' 
+                          : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                      }`}
                     >
                       Fechar
                     </button>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    <p className="text-sm text-amber-600 font-semibold">
+                    <p className={`text-sm font-semibold ${modoNoturno ? 'text-amber-400' : 'text-amber-600'}`}>
                       ⚠️ Segunda tentativa: Você pode conceder a recompensa manualmente
                     </p>
                     <div className="flex gap-3">
                       <button
                         onClick={fecharModalInsuficiente}
-                        className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-2xl font-bold hover:bg-gray-300 transition-colors"
+                        className={`flex-1 py-3 rounded-2xl font-bold transition-colors ${
+                          modoNoturno 
+                            ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' 
+                            : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                        }`}
                       >
                         Fechar
                       </button>
@@ -2403,9 +2445,13 @@ const getDadosGraficoLinha = () => {
           {/* Formulário de Treino como Overlay/Modal */}
           {mostrarFormularioTreino && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-              <div className="bg-gradient-to-br from-white to-purple-50 rounded-3xl shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className={`rounded-3xl shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto ${
+                modoNoturno 
+                  ? 'bg-gradient-to-br from-slate-800 to-slate-900' 
+                  : 'bg-gradient-to-br from-white to-purple-50'
+              }`}>
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-bold text-gray-800">
+                  <h2 className={`text-2xl font-bold ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
                     {treinoEditando ? 'Editar Treino' : 'Adicionar Treino'}
                   </h2>
                   <button
@@ -2424,17 +2470,21 @@ const getDadosGraficoLinha = () => {
                       setExercicios([]);
                       setExercicioAtual({ nome: '', repeticoes: '', duracao: '' });
                     }}
-                    className="text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    className={`p-2 rounded-full transition-colors ${
+                      modoNoturno 
+                        ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700' 
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    }`}
                   >
                     <X size={24} />
                   </button>
                 </div>
-                <p className="text-gray-600 mb-6">Data: {dataSelecionadaTreino}</p>
+                <p className={`mb-6 ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>Data: {dataSelecionadaTreino}</p>
 
                 <div className="space-y-4">
                   {/* Tipo de Treino */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className={`block text-sm font-semibold mb-2 ${modoNoturno ? 'text-slate-200' : 'text-gray-700'}`}>
                       Tipo de Treino
                     </label>
                     <div className="grid grid-cols-2 gap-4">
@@ -2446,11 +2496,13 @@ const getDadosGraficoLinha = () => {
                           className={`p-4 rounded-2xl border-2 transition-all ${
                             formularioTreino.tipo === key
                               ? 'border-current shadow-md'
-                              : 'border-gray-300 hover:border-gray-400'
+                              : modoNoturno 
+                                ? 'border-slate-600 hover:border-slate-500' 
+                                : 'border-gray-300 hover:border-gray-400'
                           }`}
                           style={{
-                            color: formularioTreino.tipo === key ? tipo.cor : '#666',
-                            backgroundColor: formularioTreino.tipo === key ? `${tipo.cor}10` : 'white'
+                            color: formularioTreino.tipo === key ? tipo.cor : (modoNoturno ? '#cbd5e1' : '#666'),
+                            backgroundColor: formularioTreino.tipo === key ? `${tipo.cor}10` : (modoNoturno ? '#334155' : 'white')
                           }}
                         >
                           <span className="font-bold text-lg">{tipo.nome}</span>
@@ -2462,13 +2514,17 @@ const getDadosGraficoLinha = () => {
                   {/* Subcategoria */}
                   {formularioTreino.tipo && (
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      <label className={`block text-sm font-semibold mb-2 ${modoNoturno ? 'text-slate-200' : 'text-gray-700'}`}>
                         Subcategoria
                       </label>
                       <select
                         value={formularioTreino.subcategoria}
                         onChange={(e) => setFormularioTreino({ ...formularioTreino, subcategoria: e.target.value })}
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-rose-400 focus:outline-none text-lg"
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none text-lg ${
+                          modoNoturno 
+                            ? 'bg-slate-700 border-slate-600 text-slate-100 focus:border-rose-400' 
+                            : 'border-gray-300 focus:border-rose-400'
+                        }`}
                       >
                         <option value="">Selecione...</option>
                         {TIPOS_TREINO[formularioTreino.tipo].subcategorias.map(sub => (
@@ -2480,17 +2536,23 @@ const getDadosGraficoLinha = () => {
 
                   {/* Seção de Exercícios Múltiplos para Funcional */}
                   {formularioTreino.subcategoria === 'Funcional' && (
-                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-xl border-2 border-purple-200">
-                      <h3 className="text-lg font-bold text-gray-800 mb-3">Exercícios</h3>
+                    <div className={`p-4 rounded-xl border-2 ${
+                      modoNoturno 
+                        ? 'bg-purple-900/30 border-purple-700' 
+                        : 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200'
+                    }`}>
+                      <h3 className={`text-lg font-bold mb-3 ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>Exercícios</h3>
                       
                       {/* Lista de exercícios adicionados */}
                       {exercicios.length > 0 && (
                         <div className="space-y-2 mb-4">
                           {exercicios.map((ex, index) => (
-                            <div key={index} className="bg-white p-3 rounded-lg flex justify-between items-center">
+                            <div key={index} className={`p-3 rounded-lg flex justify-between items-center ${
+                              modoNoturno ? 'bg-slate-800' : 'bg-white'
+                            }`}>
                               <div>
-                                <span className="font-semibold text-gray-800">{ex.nome}</span>
-                                <span className="text-sm text-gray-600 ml-2">
+                                <span className={`font-semibold ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>{ex.nome}</span>
+                                <span className={`text-sm ml-2 ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
                                   {ex.repeticoes && `${ex.repeticoes} reps`}
                                   {ex.repeticoes && ex.duracao && ' | '}
                                   {ex.duracao && `${ex.duracao} seg`}
@@ -2499,7 +2561,11 @@ const getDadosGraficoLinha = () => {
                               <button
                                 type="button"
                                 onClick={() => removerExercicio(index)}
-                                className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-50"
+                                className={`p-1 rounded-full transition-colors ${
+                                  modoNoturno 
+                                    ? 'text-red-400 hover:text-red-300 hover:bg-red-900/30' 
+                                    : 'text-red-600 hover:text-red-800 hover:bg-red-50'
+                                }`}
                               >
                                 <X size={18} />
                               </button>
@@ -2511,7 +2577,7 @@ const getDadosGraficoLinha = () => {
                       {/* Formulário para adicionar novo exercício */}
                       <div className="space-y-3">
                         <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-1">
+                          <label className={`block text-sm font-semibold mb-1 ${modoNoturno ? 'text-slate-200' : 'text-gray-700'}`}>
                             Nome do Exercício
                           </label>
                           <input
@@ -2519,13 +2585,17 @@ const getDadosGraficoLinha = () => {
                             value={exercicioAtual.nome}
                             onChange={(e) => setExercicioAtual({ ...exercicioAtual, nome: e.target.value })}
                             placeholder="Ex: Prancha, Abdominais..."
-                            className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-400 focus:outline-none"
+                            className={`w-full px-3 py-2 border-2 rounded-lg focus:outline-none ${
+                              modoNoturno 
+                                ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-400 focus:border-purple-400' 
+                                : 'border-gray-300 focus:border-purple-400'
+                            }`}
                           />
                         </div>
                         
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">
+                            <label className={`block text-sm font-semibold mb-1 ${modoNoturno ? 'text-slate-200' : 'text-gray-700'}`}>
                               Repetições
                             </label>
                             <input
@@ -2533,12 +2603,16 @@ const getDadosGraficoLinha = () => {
                               value={exercicioAtual.repeticoes}
                               onChange={(e) => setExercicioAtual({ ...exercicioAtual, repeticoes: e.target.value })}
                               placeholder="Ex: 15"
-                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-400 focus:outline-none"
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:outline-none ${
+                                modoNoturno 
+                                  ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-400 focus:border-purple-400' 
+                                  : 'border-gray-300 focus:border-purple-400'
+                              }`}
                             />
                           </div>
                           
                           <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">
+                            <label className={`block text-sm font-semibold mb-1 ${modoNoturno ? 'text-slate-200' : 'text-gray-700'}`}>
                               Duração (segundos)
                             </label>
                             <input
@@ -2546,7 +2620,11 @@ const getDadosGraficoLinha = () => {
                               value={exercicioAtual.duracao}
                               onChange={(e) => setExercicioAtual({ ...exercicioAtual, duracao: e.target.value })}
                               placeholder="Ex: 60"
-                              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-400 focus:outline-none"
+                              className={`w-full px-3 py-2 border-2 rounded-lg focus:outline-none ${
+                                modoNoturno 
+                                  ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-400 focus:border-purple-400' 
+                                  : 'border-gray-300 focus:border-purple-400'
+                              }`}
                             />
                           </div>
                         </div>
@@ -2567,31 +2645,39 @@ const getDadosGraficoLinha = () => {
                   {formularioTreino.subcategoria && formularioTreino.subcategoria !== 'Funcional' && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className={`block text-sm font-semibold mb-2 ${modoNoturno ? 'text-slate-200' : 'text-gray-700'}`}>
                           Horário de Início
                         </label>
                         <input
                           type="time"
                           value={formularioTreino.horario_inicio}
                           onChange={(e) => setFormularioTreino({ ...formularioTreino, horario_inicio: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-rose-400 focus:outline-none text-lg"
+                          className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none text-lg ${
+                            modoNoturno 
+                              ? 'bg-slate-700 border-slate-600 text-slate-100 focus:border-rose-400' 
+                              : 'border-gray-300 focus:border-rose-400'
+                          }`}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className={`block text-sm font-semibold mb-2 ${modoNoturno ? 'text-slate-200' : 'text-gray-700'}`}>
                           Horário de Fim
                         </label>
                         <input
                           type="time"
                           value={formularioTreino.horario_fim}
                           onChange={(e) => setFormularioTreino({ ...formularioTreino, horario_fim: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-rose-400 focus:outline-none text-lg"
+                          className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none text-lg ${
+                            modoNoturno 
+                              ? 'bg-slate-700 border-slate-600 text-slate-100 focus:border-rose-400' 
+                              : 'border-gray-300 focus:border-rose-400'
+                          }`}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className={`block text-sm font-semibold mb-2 ${modoNoturno ? 'text-slate-200' : 'text-gray-700'}`}>
                           Distância (km)
                         </label>
                         <input
@@ -2600,7 +2686,11 @@ const getDadosGraficoLinha = () => {
                           value={formularioTreino.distancia}
                           onChange={(e) => setFormularioTreino({ ...formularioTreino, distancia: e.target.value })}
                           placeholder="Ex: 5.5"
-                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-rose-400 focus:outline-none text-lg"
+                          className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none text-lg ${
+                            modoNoturno 
+                              ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-400 focus:border-rose-400' 
+                              : 'border-gray-300 focus:border-rose-400'
+                          }`}
                         />
                       </div>
                     </div>
@@ -2608,16 +2698,20 @@ const getDadosGraficoLinha = () => {
                   
                   {/* Mostrar duração calculada se ambos horários estiverem preenchidos */}
                   {formularioTreino.horario_inicio && formularioTreino.horario_fim && (
-                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-3 rounded-lg border-2 border-purple-200">
-                      <p className="text-sm font-semibold text-gray-700">
-                        Duração calculada: <span className="text-purple-600">{calcularDuracao(formularioTreino.horario_inicio, formularioTreino.horario_fim)} minutos</span>
+                    <div className={`p-3 rounded-lg border-2 ${
+                      modoNoturno 
+                        ? 'bg-purple-900/30 border-purple-700' 
+                        : 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200'
+                    }`}>
+                      <p className={`text-sm font-semibold ${modoNoturno ? 'text-slate-200' : 'text-gray-700'}`}>
+                        Duração calculada: <span className={modoNoturno ? 'text-purple-400' : 'text-purple-600'}>{calcularDuracao(formularioTreino.horario_inicio, formularioTreino.horario_fim)} minutos</span>
                       </p>
                     </div>
                   )}
 
                   {/* Observações */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className={`block text-sm font-semibold mb-2 ${modoNoturno ? 'text-slate-200' : 'text-gray-700'}`}>
                       Observações (opcional)
                     </label>
                     <textarea
@@ -2625,7 +2719,11 @@ const getDadosGraficoLinha = () => {
                       onChange={(e) => setFormularioTreino({ ...formularioTreino, observacoes: e.target.value })}
                       placeholder="Ex: Treino intenso, boa recuperação..."
                       rows="3"
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-rose-400 focus:outline-none text-lg"
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none text-lg ${
+                        modoNoturno 
+                          ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-400 focus:border-rose-400' 
+                          : 'border-gray-300 focus:border-rose-400'
+                      }`}
                     />
                   </div>
 
@@ -2655,7 +2753,11 @@ const getDadosGraficoLinha = () => {
                         setExercicios([]);
                         setExercicioAtual({ nome: '', repeticoes: '', duracao: '' });
                       }}
-                      className="px-6 py-3 border-2 border-gray-300 rounded-2xl font-bold text-lg hover:bg-gray-100 transition-colors"
+                      className={`px-6 py-3 border-2 rounded-2xl font-bold text-lg transition-colors ${
+                        modoNoturno 
+                          ? 'border-slate-600 text-slate-200 hover:bg-slate-700' 
+                          : 'border-gray-300 hover:bg-gray-100'
+                      }`}
                     >
                       Cancelar
                     </button>
@@ -2667,8 +2769,8 @@ const getDadosGraficoLinha = () => {
 
           {/* Lista de Treinos do Dia Selecionado */}
           {dataSelecionadaTreino && !mostrarFormularioTreino && (
-            <div className="bg-white rounded-3xl shadow-xl p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">
+            <div className={`rounded-3xl shadow-xl p-6 ${modoNoturno ? 'bg-slate-800/90' : 'bg-white'}`}>
+              <h2 className={`text-2xl font-bold mb-4 ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
                 Treinos de {dataSelecionadaTreino}
               </h2>
               
@@ -2677,7 +2779,7 @@ const getDadosGraficoLinha = () => {
                 parseInt(dataSelecionadaTreino.split('/')[1]) - 1,
                 parseInt(dataSelecionadaTreino.split('/')[2])
               ).length === 0 ? (
-                <p className="text-center text-gray-500 py-8">Nenhum treino registrado neste dia.</p>
+                <p className={`text-center py-8 ${modoNoturno ? 'text-slate-400' : 'text-gray-500'}`}>Nenhum treino registrado neste dia.</p>
               ) : (
                 <div className="space-y-4">
                   {getTreinosNaData(
@@ -2687,28 +2789,34 @@ const getDadosGraficoLinha = () => {
                   ).map((treino) => (
                     <div
                       key={treino.id}
-                      className="border-2 border-gray-200 rounded-2xl p-4 hover:shadow-md transition-all"
+                      className={`border-2 rounded-2xl p-4 hover:shadow-md transition-all ${
+                        modoNoturno ? 'border-slate-600 bg-slate-700/50' : 'border-gray-200'
+                      }`}
                       style={{ borderLeftWidth: '6px', borderLeftColor: TIPOS_TREINO[treino.tipo]?.cor }}
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
-                          <h3 className="text-xl font-bold text-gray-800 mb-2">
+                          <h3 className={`text-xl font-bold mb-2 ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
                             {treino.subcategoria}
                           </h3>
-                          <p className="text-sm text-gray-600 mb-2">
+                          <p className={`text-sm mb-2 ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
                             Tipo: <span className="font-semibold">{TIPOS_TREINO[treino.tipo]?.nome}</span>
                           </p>
                           
                           {/* Display exercises for functional training */}
                           {treino.subcategoria === 'Funcional' && treino.exercicios && treino.exercicios.length > 0 && (
-                            <div className="mt-3 bg-gradient-to-br from-purple-50 to-pink-50 p-3 rounded-lg">
-                              <p className="text-sm font-semibold text-gray-700 mb-2">Exercícios:</p>
+                            <div className={`mt-3 p-3 rounded-lg ${
+                              modoNoturno 
+                                ? 'bg-purple-900/30 border border-purple-700' 
+                                : 'bg-gradient-to-br from-purple-50 to-pink-50'
+                            }`}>
+                              <p className={`text-sm font-semibold mb-2 ${modoNoturno ? 'text-slate-200' : 'text-gray-700'}`}>Exercícios:</p>
                               <ul className="space-y-1">
                                 {treino.exercicios.map((ex, idx) => (
-                                  <li key={idx} className="text-sm text-gray-700 flex items-center gap-2">
-                                    <Check size={14} className="text-purple-600" />
+                                  <li key={idx} className={`text-sm flex items-center gap-2 ${modoNoturno ? 'text-slate-200' : 'text-gray-700'}`}>
+                                    <Check size={14} className={modoNoturno ? 'text-purple-400' : 'text-purple-600'} />
                                     <span className="font-medium">{ex.nome}</span>
-                                    <span className="text-gray-600">
+                                    <span className={modoNoturno ? 'text-slate-300' : 'text-gray-600'}>
                                       {ex.repeticoes && `${ex.repeticoes} reps`}
                                       {ex.repeticoes && ex.duracao && ' | '}
                                       {ex.duracao && `${ex.duracao} seg`}
@@ -2721,28 +2829,28 @@ const getDadosGraficoLinha = () => {
                           
                           {treino.horario_inicio && treino.horario_fim && (
                             <>
-                              <p className="text-sm text-gray-600">
+                              <p className={`text-sm ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
                                 Horário: <span className="font-semibold">{treino.horario_inicio} - {treino.horario_fim}</span>
                               </p>
                               {treino.duracao && (
-                                <p className="text-sm text-gray-600">
+                                <p className={`text-sm ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
                                   Duração: <span className="font-semibold">{treino.duracao} minutos</span>
                                 </p>
                               )}
                             </>
                           )}
                           {!treino.horario_inicio && !treino.horario_fim && treino.duracao && (
-                            <p className="text-sm text-gray-600">
+                            <p className={`text-sm ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
                               Duração: <span className="font-semibold">{treino.duracao} minutos</span>
                             </p>
                           )}
                           {treino.distancia && (
-                            <p className="text-sm text-gray-600">
+                            <p className={`text-sm ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
                               Distância: <span className="font-semibold">{treino.distancia} km</span>
                             </p>
                           )}
                           {treino.observacoes && (
-                            <p className="text-sm text-gray-600 mt-2">
+                            <p className={`text-sm mt-2 ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
                               <span className="font-semibold">Obs:</span> {treino.observacoes}
                             </p>
                           )}
@@ -2751,14 +2859,22 @@ const getDadosGraficoLinha = () => {
                           <button
                             type="button"
                             onClick={() => editarTreino(treino)}
-                            className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded-full transition-colors"
+                            className={`p-2 rounded-full transition-colors ${
+                              modoNoturno 
+                                ? 'text-blue-400 hover:text-blue-300 hover:bg-blue-900/30' 
+                                : 'text-blue-600 hover:text-blue-800 hover:bg-blue-50'
+                            }`}
                           >
                             <Edit2 size={20} />
                           </button>
                           <button
                             type="button"
                             onClick={() => excluirTreino(treino.id)}
-                            className="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded-full transition-colors"
+                            className={`p-2 rounded-full transition-colors ${
+                              modoNoturno 
+                                ? 'text-red-400 hover:text-red-300 hover:bg-red-900/30' 
+                                : 'text-red-600 hover:text-red-800 hover:bg-red-50'
+                            }`}
                           >
                             <X size={20} />
                           </button>
