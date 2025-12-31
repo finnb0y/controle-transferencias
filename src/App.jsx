@@ -26,7 +26,8 @@ const ControleTransferencias = () => {
   const [formularioTreino, setFormularioTreino] = useState({
     tipo: '',
     subcategoria: '',
-    duracao: '',
+    horario_inicio: '',
+    horario_fim: '',
     distancia: '',
     observacoes: ''
   });
@@ -136,7 +137,7 @@ const ControleTransferencias = () => {
     try {
       const { data, error } = await supabase
         .from('treinos')
-        .select('id, data, tipo, subcategoria, duracao, distancia, observacoes, exercicios, created_at')
+        .select('id, data, tipo, subcategoria, duracao, distancia, observacoes, exercicios, horario_inicio, horario_fim, created_at')
         .order('data', { ascending: false });
 
       if (error) {
@@ -357,7 +358,7 @@ const ControleTransferencias = () => {
     return true;
   });
 
-  // Se ordenarPorData for true, ordena cronologicamente (mais antigo primeiro)
+  // Se ordenarPorData for true, ordena cronologicamente (mais recente primeiro)
   if (ordenarPorData) {
     resultado.sort((a, b) => {
       const partesA = a.data.split('/');
@@ -375,7 +376,7 @@ const ControleTransferencias = () => {
         parseInt(partesB[0]) // dia
       );
       
-      return dataA - dataB; // ordem crescente (mais antigo primeiro)
+      return dataB - dataA; // ordem decrescente (mais recente primeiro)
     });
   }
   
@@ -438,13 +439,32 @@ const getDadosGraficoLinha = () => {
   
   // Funções para Treino
   
+  // Helper function to calculate duration from start and end times
+  const calcularDuracao = (horarioInicio, horarioFim) => {
+    if (!horarioInicio || !horarioFim) return null;
+    
+    const [horaInicio, minutoInicio] = horarioInicio.split(':').map(Number);
+    const [horaFim, minutoFim] = horarioFim.split(':').map(Number);
+    
+    const minutosInicio = horaInicio * 60 + minutoInicio;
+    const minutosFim = horaFim * 60 + minutoFim;
+    
+    let duracao = minutosFim - minutosInicio;
+    
+    // Se o horário de fim for menor que o de início, assumir que passou da meia-noite
+    if (duracao < 0) {
+      duracao += 24 * 60; // adiciona 24 horas em minutos
+    }
+    
+    return duracao;
+  };
+  
   // Helper function to convert form values to proper database types
   const converterValoresTreino = (formulario) => {
-    // Convert duracao to integer or null, handling NaN cases
+    // Calculate duration from start and end times
     let duracaoValue = null;
-    if (formulario.duracao && String(formulario.duracao).trim() !== '') {
-      const parsed = parseInt(formulario.duracao, 10);
-      duracaoValue = isNaN(parsed) ? null : parsed;
+    if (formulario.horario_inicio && formulario.horario_fim) {
+      duracaoValue = calcularDuracao(formulario.horario_inicio, formulario.horario_fim);
     }
     
     // Convert distancia to float or null, handling NaN cases
@@ -456,7 +476,9 @@ const getDadosGraficoLinha = () => {
     
     return {
       duracao: duracaoValue,
-      distancia: distanciaValue
+      distancia: distanciaValue,
+      horario_inicio: formulario.horario_inicio || null,
+      horario_fim: formulario.horario_fim || null
     };
   };
   
@@ -487,7 +509,8 @@ const getDadosGraficoLinha = () => {
     setFormularioTreino({
       tipo: '',
       subcategoria: '',
-      duracao: '',
+      horario_inicio: '',
+      horario_fim: '',
       distancia: '',
       observacoes: ''
     });
@@ -510,7 +533,7 @@ const getDadosGraficoLinha = () => {
 
     try {
       // Convert string values to proper types using helper function
-      const { duracao, distancia } = converterValoresTreino(formularioTreino);
+      const { duracao, distancia, horario_inicio, horario_fim } = converterValoresTreino(formularioTreino);
       
       const treinoData = {
         data: dataSelecionadaTreino,
@@ -518,6 +541,8 @@ const getDadosGraficoLinha = () => {
         subcategoria: formularioTreino.subcategoria,
         duracao,
         distancia,
+        horario_inicio,
+        horario_fim,
         observacoes: formularioTreino.observacoes || null,
         // Always include exercicios field (empty array if not functional)
         exercicios: formularioTreino.subcategoria === 'Funcional' ? exercicios : []
@@ -535,7 +560,8 @@ const getDadosGraficoLinha = () => {
       setFormularioTreino({
         tipo: '',
         subcategoria: '',
-        duracao: '',
+        horario_inicio: '',
+        horario_fim: '',
         distancia: '',
         observacoes: ''
       });
@@ -554,7 +580,8 @@ const getDadosGraficoLinha = () => {
     setFormularioTreino({
       tipo: treino.tipo,
       subcategoria: treino.subcategoria,
-      duracao: treino.duracao || '',
+      horario_inicio: treino.horario_inicio || '',
+      horario_fim: treino.horario_fim || '',
       distancia: treino.distancia || '',
       observacoes: treino.observacoes || ''
     });
@@ -579,13 +606,15 @@ const getDadosGraficoLinha = () => {
     
     try {
       // Convert string values to proper types using helper function
-      const { duracao, distancia } = converterValoresTreino(formularioTreino);
+      const { duracao, distancia, horario_inicio, horario_fim } = converterValoresTreino(formularioTreino);
       
       const updateData = {
         tipo: formularioTreino.tipo,
         subcategoria: formularioTreino.subcategoria,
         duracao,
         distancia,
+        horario_inicio,
+        horario_fim,
         observacoes: formularioTreino.observacoes || null,
         // Always include exercicios field (empty array if not functional)
         exercicios: formularioTreino.subcategoria === 'Funcional' ? exercicios : []
@@ -605,7 +634,8 @@ const getDadosGraficoLinha = () => {
       setFormularioTreino({
         tipo: '',
         subcategoria: '',
-        duracao: '',
+        horario_inicio: '',
+        horario_fim: '',
         distancia: '',
         observacoes: ''
       });
@@ -1295,7 +1325,8 @@ const getDadosGraficoLinha = () => {
                       setFormularioTreino({
                         tipo: '',
                         subcategoria: '',
-                        duracao: '',
+                        horario_inicio: '',
+                        horario_fim: '',
                         distancia: '',
                         observacoes: ''
                       });
@@ -1441,18 +1472,29 @@ const getDadosGraficoLinha = () => {
                     </div>
                   )}
 
-                  {/* Duração e Distância - Não mostrar para funcional */}
+                  {/* Horário de Início, Fim e Distância - Não mostrar para funcional */}
                   {formularioTreino.subcategoria && formularioTreino.subcategoria !== 'Funcional' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Duração (minutos)
+                          Horário de Início
                         </label>
                         <input
-                          type="number"
-                          value={formularioTreino.duracao}
-                          onChange={(e) => setFormularioTreino({ ...formularioTreino, duracao: e.target.value })}
-                          placeholder="Ex: 45"
+                          type="time"
+                          value={formularioTreino.horario_inicio}
+                          onChange={(e) => setFormularioTreino({ ...formularioTreino, horario_inicio: e.target.value })}
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none text-lg"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Horário de Fim
+                        </label>
+                        <input
+                          type="time"
+                          value={formularioTreino.horario_fim}
+                          onChange={(e) => setFormularioTreino({ ...formularioTreino, horario_fim: e.target.value })}
                           className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none text-lg"
                         />
                       </div>
@@ -1470,6 +1512,15 @@ const getDadosGraficoLinha = () => {
                           className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none text-lg"
                         />
                       </div>
+                    </div>
+                  )}
+                  
+                  {/* Mostrar duração calculada se ambos horários estiverem preenchidos */}
+                  {formularioTreino.horario_inicio && formularioTreino.horario_fim && (
+                    <div className="bg-purple-50 p-3 rounded-lg border-2 border-purple-200">
+                      <p className="text-sm font-semibold text-gray-700">
+                        Duração calculada: <span className="text-purple-600">{calcularDuracao(formularioTreino.horario_inicio, formularioTreino.horario_fim)} minutos</span>
+                      </p>
                     </div>
                   )}
 
@@ -1505,7 +1556,8 @@ const getDadosGraficoLinha = () => {
                         setFormularioTreino({
                           tipo: '',
                           subcategoria: '',
-                          duracao: '',
+                          horario_inicio: '',
+                          horario_fim: '',
                           distancia: '',
                           observacoes: ''
                         });
@@ -1576,7 +1628,19 @@ const getDadosGraficoLinha = () => {
                             </div>
                           )}
                           
-                          {treino.duracao && (
+                          {treino.horario_inicio && treino.horario_fim && (
+                            <>
+                              <p className="text-sm text-gray-600">
+                                Horário: <span className="font-semibold">{treino.horario_inicio} - {treino.horario_fim}</span>
+                              </p>
+                              {treino.duracao && (
+                                <p className="text-sm text-gray-600">
+                                  Duração: <span className="font-semibold">{treino.duracao} minutos</span>
+                                </p>
+                              )}
+                            </>
+                          )}
+                          {!treino.horario_inicio && !treino.horario_fim && treino.duracao && (
                             <p className="text-sm text-gray-600">
                               Duração: <span className="font-semibold">{treino.duracao} minutos</span>
                             </p>
@@ -1621,7 +1685,8 @@ const getDadosGraficoLinha = () => {
                   setFormularioTreino({
                     tipo: '',
                     subcategoria: '',
-                    duracao: '',
+                    horario_inicio: '',
+                    horario_fim: '',
                     distancia: '',
                     observacoes: ''
                   });
