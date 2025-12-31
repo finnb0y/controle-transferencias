@@ -1762,6 +1762,7 @@ const getDadosGraficoLinha = () => {
                   const dia = index + 1;
                   const dataFormatada = `${String(dia).padStart(2, '0')}/${String(calendarioTreino.mes + 1).padStart(2, '0')}/${calendarioTreino.ano}`;
                   const treinosDoDia = getTreinosNaData(dia, calendarioTreino.mes, calendarioTreino.ano);
+                  const temTreinos = treinosDoDia.length > 0;
                   const isHoje = dia === new Date().getDate() &&
                     calendarioTreino.mes === new Date().getMonth() &&
                     calendarioTreino.ano === new Date().getFullYear();
@@ -1776,13 +1777,13 @@ const getDadosGraficoLinha = () => {
                         ${isHoje ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-rose-300'}
                         ${treinosDoDia.length === 1 ? 'bg-gradient-to-br from-purple-100 via-pink-100 to-rose-100' : 'bg-white'}
                       `}
-                      aria-label={`${dia} de ${meses[calendarioTreino.mes]}${temRecompensa ? ', dia recompensado' : ''}${treinosDoDia.length > 0 ? `, ${treinosDoDia.length} treino(s)` : ''}`}
+                      aria-label={`${dia} de ${meses[calendarioTreino.mes]}${temRecompensa ? ', dia recompensado' : ''}${temTreinos ? `, ${treinosDoDia.length} treino(s)` : ''}`}
                     >
                       {/* Colored training divisions for multiple trainings */}
                       {treinosDoDia.length > 1 && renderTrainingDivisions(treinosDoDia, dia)}
                       
                       {/* Indicador de Recompensa - Only show on days with training */}
-                      {temRecompensa && treinosDoDia.length > 0 && (
+                      {temRecompensa && temTreinos && (
                         <div 
                           className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 z-10"
                           title="Dia recompensado"
@@ -1800,7 +1801,7 @@ const getDadosGraficoLinha = () => {
                         {dia}
                       </span>
                       
-                      {treinosDoDia.length > 0 && (
+                      {temTreinos && (
                         <div className="relative z-10 flex flex-col gap-0.5 w-full">
                           {treinosDoDia.slice(0, 2).map((treino, idx) => (
                             <div 
