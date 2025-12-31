@@ -59,6 +59,7 @@ const ControleTransferencias = () => {
   const [mostrarModalInsuficiente, setMostrarModalInsuficiente] = useState(false);
   const [mensagemModalInsuficiente, setMensagemModalInsuficiente] = useState('');
   const [mostrarSeletorData, setMostrarSeletorData] = useState(false);
+  const [semanasRecompensadas, setSemanasRecompensadas] = useState([]); // Lista de semanas que receberam recompensas
   
 
 
@@ -105,6 +106,7 @@ const ControleTransferencias = () => {
   useEffect(() => {
     carregarDados();
     carregarTreinos();
+    carregarRecompensas();
     
     // Cleanup function to clear timer on component unmount
     return () => {
@@ -160,6 +162,27 @@ const ControleTransferencias = () => {
     } catch (error) {
       console.error('Erro ao carregar treinos:', error);
       setTreinos([]);
+    }
+  };
+  
+  const carregarRecompensas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('recompensas')
+        .select('data_inicio_semana, data_fim_semana, dias_treino, concedido_em')
+        .order('data_inicio_semana', { ascending: false });
+
+      if (error) {
+        // Se a tabela não existe, silenciosamente retorna array vazio
+        console.log('Tabela recompensas não encontrada ou erro:', error);
+        setSemanasRecompensadas([]);
+        return;
+      }
+
+      setSemanasRecompensadas(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar recompensas:', error);
+      setSemanasRecompensadas([]);
     }
   };
 
@@ -774,6 +797,40 @@ const getDadosGraficoLinha = () => {
   
   // Funções do Sistema de Recompensas
   
+  // Verificar se uma data específica faz parte de uma semana recompensada
+  const diaEstaEmSemanaRecompensada = (dataFormatada) => {
+    if (semanasRecompensadas.length === 0) return false;
+    
+    // Converter a data formatada para objeto Date
+    const partes = dataFormatada.split('/');
+    if (partes.length !== 3) return false;
+    
+    const dia = parseInt(partes[0]);
+    const mes = parseInt(partes[1]) - 1; // Mês em JS é 0-indexed
+    const ano = parseInt(partes[2]);
+    const dataAlvo = new Date(ano, mes, dia);
+    
+    // Verificar se a data está dentro de alguma semana recompensada
+    return semanasRecompensadas.some(semana => {
+      const partesInicio = semana.data_inicio_semana.split('/');
+      const partesFim = semana.data_fim_semana.split('/');
+      
+      const dataInicio = new Date(
+        parseInt(partesInicio[2]),
+        parseInt(partesInicio[1]) - 1,
+        parseInt(partesInicio[0])
+      );
+      
+      const dataFim = new Date(
+        parseInt(partesFim[2]),
+        parseInt(partesFim[1]) - 1,
+        parseInt(partesFim[0])
+      );
+      
+      return dataAlvo >= dataInicio && dataAlvo <= dataFim;
+    });
+  };
+  
   // Obter semana baseada em uma data de referência
   const obterSemanaPorData = (dataReferencia) => {
     const data = dataReferencia ? new Date(dataReferencia) : new Date();
@@ -910,7 +967,33 @@ const getDadosGraficoLinha = () => {
       }
     }
     
-    // Salvar recompensa (aqui pode ser implementada lógica de banco de dados)
+    // Salvar recompensa no banco de dados
+    try {
+      const dataInicioSemana = semana[0].dataFormatada; // Domingo
+      const dataFimSemana = semana[6].dataFormatada; // Sábado
+      
+      const { error } = await supabase
+        .from('recompensas')
+        .insert([
+          {
+            data_inicio_semana: dataInicioSemana,
+            data_fim_semana: dataFimSemana,
+            dias_treino: diasComTreino.length
+          }
+        ]);
+
+      if (error) {
+        console.error('Erro ao salvar recompensa:', error);
+        mostrarBarraConfirmacao('Erro ao salvar recompensa. A recompensa foi concedida, mas não foi salva no banco de dados.', 'warning');
+      } else {
+        // Recarregar recompensas para atualizar a interface
+        await carregarRecompensas();
+      }
+    } catch (error) {
+      console.error('Erro ao salvar recompensa:', error);
+      mostrarBarraConfirmacao('Erro ao salvar recompensa. A recompensa foi concedida, mas não foi salva no banco de dados.', 'warning');
+    }
+    
     mostrarBarraConfirmacao('🎉 Parabéns! Você ganhou uma recompensa por manter a consistência!', 'success');
     
     // Resetar estados
@@ -924,6 +1007,33 @@ const getDadosGraficoLinha = () => {
     setMostrarModalInsuficiente(false);
     
     // Salvar recompensa mesmo sem requisitos mínimos
+    const semana = obterSemanaAtual();
+    const diasComTreino = semana.filter(dia => diaEstaMarcado(dia.dataFormatada));
+    
+    try {
+      const dataInicioSemana = semana[0].dataFormatada; // Domingo
+      const dataFimSemana = semana[6].dataFormatada; // Sábado
+      
+      const { error } = await supabase
+        .from('recompensas')
+        .insert([
+          {
+            data_inicio_semana: dataInicioSemana,
+            data_fim_semana: dataFimSemana,
+            dias_treino: diasComTreino.length
+          }
+        ]);
+
+      if (error) {
+        console.error('Erro ao salvar recompensa:', error);
+      } else {
+        // Recarregar recompensas para atualizar a interface
+        await carregarRecompensas();
+      }
+    } catch (error) {
+      console.error('Erro ao salvar recompensa:', error);
+    }
+    
     mostrarBarraConfirmacao('🎉 Recompensa concedida! Continue se esforçando!', 'success');
     
     // Resetar estados
@@ -1459,21 +1569,39 @@ const getDadosGraficoLinha = () => {
                 {/* Dias do mês */}
                 {Array.from({ length: diasNoMes }).map((_, index) => {
                   const dia = index + 1;
+                  const dataFormatada = `${String(dia).padStart(2, '0')}/${String(calendarioTreino.mes + 1).padStart(2, '0')}/${calendarioTreino.ano}`;
                   const treinosDoDia = getTreinosNaData(dia, calendarioTreino.mes, calendarioTreino.ano);
                   const isHoje = dia === new Date().getDate() &&
                     calendarioTreino.mes === new Date().getMonth() &&
                     calendarioTreino.ano === new Date().getFullYear();
+                  const temRecompensa = diaEstaEmSemanaRecompensada(dataFormatada);
 
                   return (
                     <button
                       key={dia}
                       type="button"
                       onClick={() => selecionarDiaTreino(dia)}
-                      className={`h-14 sm:h-20 rounded-xl border-2 transition-all hover:shadow-md flex flex-col items-center justify-start p-1 sm:p-2
+                      className={`relative h-14 sm:h-20 rounded-xl border-2 transition-all hover:shadow-md flex flex-col items-center justify-start p-1 sm:p-2
                         ${isHoje ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-rose-300'}
                         ${treinosDoDia.length > 0 ? 'bg-gradient-to-br from-purple-100 via-pink-100 to-rose-100' : 'bg-white'}
                       `}
+                      aria-label={`${dia} de ${meses[calendarioTreino.mes]}${temRecompensa ? ', dia recompensado' : ''}${treinosDoDia.length > 0 ? `, ${treinosDoDia.length} treino(s)` : ''}`}
                     >
+                      {/* Indicador de Recompensa */}
+                      {temRecompensa && (
+                        <div 
+                          className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 z-10"
+                          title="Dia recompensado"
+                          aria-hidden="true"
+                        >
+                          <Award 
+                            size={12} 
+                            className="text-amber-500 drop-shadow-sm sm:w-4 sm:h-4" 
+                            fill="currentColor"
+                          />
+                        </div>
+                      )}
+                      
                       <span className={`text-sm sm:text-base font-semibold mb-0.5 ${isHoje ? 'text-rose-600' : 'text-gray-700'}`}>
                         {dia}
                       </span>
