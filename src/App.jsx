@@ -53,6 +53,12 @@ const ControleTransferencias = () => {
   
   // Estados para sistema de recompensas
   const [mostrarRecompensas, setMostrarRecompensas] = useState(false);
+  const [semanaSelecionadaRecompensa, setSemanaSelecionadaRecompensa] = useState(null); // Data de referência para a semana
+  const [diasMarcadosRecompensa, setDiasMarcadosRecompensa] = useState({}); // Dias manualmente marcados/desmarcados
+  const [tentativasRecompensa, setTentativasRecompensa] = useState(0); // Contador de tentativas
+  const [mostrarModalInsuficiente, setMostrarModalInsuficiente] = useState(false);
+  const [mensagemModalInsuficiente, setMensagemModalInsuficiente] = useState('');
+  const [mostrarSeletorData, setMostrarSeletorData] = useState(false);
   
 
 
@@ -767,10 +773,12 @@ const getDadosGraficoLinha = () => {
   };
   
   // Funções do Sistema de Recompensas
-  const obterSemanaAtual = () => {
-    const hoje = new Date();
-    const primeiroDiaSemana = new Date(hoje);
-    primeiroDiaSemana.setDate(hoje.getDate() - hoje.getDay()); // Domingo
+  
+  // Obter semana baseada em uma data de referência
+  const obterSemanaPorData = (dataReferencia) => {
+    const data = dataReferencia ? new Date(dataReferencia) : new Date();
+    const primeiroDiaSemana = new Date(data);
+    primeiroDiaSemana.setDate(data.getDate() - data.getDay()); // Domingo
     
     const diasSemana = [];
     for (let i = 0; i < 7; i++) {
@@ -778,27 +786,93 @@ const getDadosGraficoLinha = () => {
       dia.setDate(primeiroDiaSemana.getDate() + i);
       diasSemana.push({
         data: dia,
-        dataFormatada: `${String(dia.getDate()).padStart(2, '0')}/${String(dia.getMonth() + 1).padStart(2, '0')}/${dia.getFullYear()}`
+        dataFormatada: `${String(dia.getDate()).padStart(2, '0')}/${String(dia.getMonth() + 1).padStart(2, '0')}/${dia.getFullYear()}`,
+        diaSemana: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][i]
       });
     }
     return diasSemana;
   };
   
-  const verificarConsistenciaTreino = (diasComTreino) => {
-    if (diasComTreino.length < 4) {
+  const obterSemanaAtual = () => {
+    return obterSemanaPorData(semanaSelecionadaRecompensa);
+  };
+  
+  // Verificar se a semana está completa dentro do mês
+  const verificarSemanaCompleta = (semana) => {
+    if (!semana || semana.length === 0) return { completa: true, diasNoMes: 7 };
+    
+    const mesReferencia = semanaSelecionadaRecompensa ? new Date(semanaSelecionadaRecompensa).getMonth() : new Date().getMonth();
+    
+    let diasNoMes = 0;
+    semana.forEach(dia => {
+      if (dia.data.getMonth() === mesReferencia) {
+        diasNoMes++;
+      }
+    });
+    
+    return {
+      completa: diasNoMes === 7,
+      diasNoMes: diasNoMes,
+      porcentagem: (diasNoMes / 7) * 100
+    };
+  };
+  
+  // Calcular número mínimo de treinos necessários baseado na semana
+  const calcularMinimoTreinos = (semana) => {
+    const info = verificarSemanaCompleta(semana);
+    
+    // Para semana completa (7 dias no mês): mínimo 4 treinos
+    if (info.completa) {
+      return 4;
+    }
+    
+    // Para semana incompleta: ajustar proporcionalmente (arredondando para cima)
+    // Mas no mínimo 2 treinos para semanas muito curtas
+    const minimoCalculado = Math.ceil((4 / 7) * info.diasNoMes);
+    return Math.max(2, minimoCalculado);
+  };
+  
+  // Verificar se um dia está marcado (considerando marcações manuais e treinos reais)
+  const diaEstaMarcado = (dataFormatada) => {
+    // Se há marcação manual, usa ela
+    if (Object.prototype.hasOwnProperty.call(diasMarcadosRecompensa, dataFormatada)) {
+      return diasMarcadosRecompensa[dataFormatada];
+    }
+    // Caso contrário, verifica se há treino real
+    return treinos.some(t => t.data === dataFormatada);
+  };
+  
+  // Toggle manual de marcação de dia
+  const toggleDiaMarcado = (dataFormatada) => {
+    const estadoAtual = diaEstaMarcado(dataFormatada);
+    setDiasMarcadosRecompensa({
+      ...diasMarcadosRecompensa,
+      [dataFormatada]: !estadoAtual
+    });
+  };
+  
+  const verificarConsistenciaTreino = (diasComTreino, semana) => {
+    const minimoNecessario = calcularMinimoTreinos(semana);
+    const infoSemana = verificarSemanaCompleta(semana);
+    
+    if (diasComTreino.length < minimoNecessario) {
+      const mensagem = infoSemana.completa 
+        ? `Você precisa de pelo menos ${minimoNecessario} dias de treino para ganhar uma recompensa.`
+        : `Esta semana tem apenas ${infoSemana.diasNoMes} dias no mês. Você precisa de pelo menos ${minimoNecessario} dias de treino.`;
+      
       return {
         valido: false,
-        mensagem: 'Você precisa de pelo menos 4 dias de treino por semana para ganhar uma recompensa.'
+        mensagem: mensagem
       };
     }
     
     // Ordenar dias por data
-    const diasOrdenados = [...diasComTreino].sort((a, b) => a.data - b.data);
+    const diasOrdenados = [...diasComTreino].sort((a, b) => new Date(a.data) - new Date(b.data));
     
     // Verificar lacunas entre treinos
     let maiorLacuna = 0;
     for (let i = 1; i < diasOrdenados.length; i++) {
-      const diff = Math.floor((diasOrdenados[i].data - diasOrdenados[i-1].data) / (1000 * 60 * 60 * 24));
+      const diff = Math.floor((new Date(diasOrdenados[i].data) - new Date(diasOrdenados[i-1].data)) / (1000 * 60 * 60 * 24));
       if (diff > maiorLacuna) {
         maiorLacuna = diff;
       }
@@ -818,14 +892,14 @@ const getDadosGraficoLinha = () => {
   
   const adicionarRecompensa = async () => {
     const semana = obterSemanaAtual();
-    const diasComTreino = semana.filter(dia => {
-      return treinos.some(t => t.data === dia.dataFormatada);
-    });
+    const diasComTreino = semana.filter(dia => diaEstaMarcado(dia.dataFormatada));
     
-    const validacao = verificarConsistenciaTreino(diasComTreino);
+    const validacao = verificarConsistenciaTreino(diasComTreino.map(d => ({ data: d.data })), semana);
     
     if (!validacao.valido) {
-      mostrarBarraConfirmacao(validacao.mensagem, 'warning');
+      setTentativasRecompensa(prev => prev + 1);
+      setMensagemModalInsuficiente(validacao.mensagem);
+      setMostrarModalInsuficiente(true);
       return;
     }
     
@@ -836,10 +910,46 @@ const getDadosGraficoLinha = () => {
       }
     }
     
-    // Aqui você pode implementar a lógica para salvar a recompensa
-    // Por exemplo, salvando no banco de dados ou apenas mostrando uma mensagem
+    // Salvar recompensa (aqui pode ser implementada lógica de banco de dados)
     mostrarBarraConfirmacao('🎉 Parabéns! Você ganhou uma recompensa por manter a consistência!', 'success');
+    
+    // Resetar estados
     setMostrarRecompensas(false);
+    setTentativasRecompensa(0);
+    setDiasMarcadosRecompensa({});
+    setSemanaSelecionadaRecompensa(null);
+  };
+  
+  const recompensarMesmoAssim = async () => {
+    setMostrarModalInsuficiente(false);
+    
+    // Salvar recompensa mesmo sem requisitos mínimos
+    mostrarBarraConfirmacao('🎉 Recompensa concedida! Continue se esforçando!', 'success');
+    
+    // Resetar estados
+    setMostrarRecompensas(false);
+    setTentativasRecompensa(0);
+    setDiasMarcadosRecompensa({});
+    setSemanaSelecionadaRecompensa(null);
+  };
+  
+  const fecharModalInsuficiente = () => {
+    setMostrarModalInsuficiente(false);
+  };
+  
+  const abrirSistemaRecompensas = () => {
+    setSemanaSelecionadaRecompensa(new Date());
+    setDiasMarcadosRecompensa({});
+    setTentativasRecompensa(0);
+    setMostrarRecompensas(true);
+  };
+  
+  const selecionarDataParaSemana = (dia, mes, ano) => {
+    const data = new Date(ano, mes, dia);
+    setSemanaSelecionadaRecompensa(data);
+    setDiasMarcadosRecompensa({});
+    setTentativasRecompensa(0);
+    setMostrarSeletorData(false);
   };
   
   // Renderiza componentes de notificação e confirmação
@@ -1294,7 +1404,7 @@ const getDadosGraficoLinha = () => {
           <div className="bg-white rounded-3xl shadow-xl p-4 sm:p-6 mb-6 relative">
             {/* Reward System Button */}
             <button
-              onClick={() => setMostrarRecompensas(!mostrarRecompensas)}
+              onClick={abrirSistemaRecompensas}
               className="absolute top-4 right-4 bg-gradient-to-br from-amber-400 to-yellow-500 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110"
               title="Sistema de Recompensas"
             >
@@ -1418,54 +1528,155 @@ const getDadosGraficoLinha = () => {
                   </h2>
                   <button
                     type="button"
-                    onClick={() => setMostrarRecompensas(false)}
+                    onClick={() => {
+                      setMostrarRecompensas(false);
+                      setSemanaSelecionadaRecompensa(null);
+                      setDiasMarcadosRecompensa({});
+                      setTentativasRecompensa(0);
+                    }}
                     className="text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-full transition-colors"
                   >
                     <X size={24} />
                   </button>
                 </div>
                 
-                <p className="text-gray-600 mb-6">
-                  Acompanhe seus treinos desta semana e ganhe recompensas mantendo a consistência!
+                <p className="text-gray-600 mb-4">
+                  Acompanhe seus treinos e ganhe recompensas mantendo a consistência!
                 </p>
                 
-                {/* Dias da semana atual com treinos */}
+                {/* Seletor de Semana */}
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border-2 border-blue-200 mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="text-sm font-semibold text-gray-800">
+                      📅 Semana Selecionada:
+                    </p>
+                    <button
+                      onClick={() => setMostrarSeletorData(!mostrarSeletorData)}
+                      className="text-sm bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Selecionar Outra Semana
+                    </button>
+                  </div>
+                  <p className="text-gray-700">
+                    {semanaSelecionadaRecompensa 
+                      ? `${obterSemanaAtual()[0].dataFormatada} - ${obterSemanaAtual()[6].dataFormatada}`
+                      : 'Semana atual'}
+                  </p>
+                  {!verificarSemanaCompleta(obterSemanaAtual()).completa && (
+                    <p className="text-xs text-amber-600 mt-2">
+                      ⚠️ Esta semana tem apenas {verificarSemanaCompleta(obterSemanaAtual()).diasNoMes} dias no mês corrente
+                    </p>
+                  )}
+                </div>
+                
+                {/* Calendário compacto para seleção de data */}
+                {mostrarSeletorData && (
+                  <div className="bg-white border-2 border-gray-300 rounded-xl p-4 mb-4 shadow-lg">
+                    <h3 className="text-sm font-bold text-gray-800 mb-3">Selecione um dia para ver sua semana:</h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <button
+                        type="button"
+                        onClick={() => mudarMesTreino(-1)}
+                        className="p-2 hover:bg-gray-100 rounded-full"
+                      >
+                        ←
+                      </button>
+                      <span className="font-bold text-gray-800">
+                        {meses[calendarioTreino.mes]} {calendarioTreino.ano}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => mudarMesTreino(1)}
+                        className="p-2 hover:bg-gray-100 rounded-full"
+                      >
+                        →
+                      </button>
+                    </div>
+                    
+                    <div className="grid grid-cols-7 gap-1 mb-2">
+                      {diasSemana.map(dia => (
+                        <div key={dia} className="text-center text-xs font-bold text-gray-600">
+                          {dia}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="grid grid-cols-7 gap-1">
+                      {Array.from({ length: getPrimeiroDiaSemana(calendarioTreino.mes, calendarioTreino.ano) }).map((_, i) => (
+                        <div key={`vazio-${i}`} className="h-8"></div>
+                      ))}
+                      {Array.from({ length: getDiasNoMes(calendarioTreino.mes, calendarioTreino.ano) }).map((_, index) => {
+                        const dia = index + 1;
+                        return (
+                          <button
+                            key={dia}
+                            type="button"
+                            onClick={() => selecionarDataParaSemana(dia, calendarioTreino.mes, calendarioTreino.ano)}
+                            className="h-8 rounded-lg border hover:bg-blue-100 hover:border-blue-400 transition-all text-sm"
+                          >
+                            {dia}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Dias da semana selecionada com treinos - INTERATIVO */}
                 <div className="space-y-3 mb-6">
-                  <h3 className="text-lg font-bold text-gray-800">Treinos desta Semana</h3>
+                  <h3 className="text-lg font-bold text-gray-800">
+                    Treinos da Semana Selecionada
+                  </h3>
+                  <p className="text-xs text-gray-600 mb-2">
+                    💡 Clique nos dias para marcar/desmarcar manualmente
+                  </p>
                   {obterSemanaAtual().map((dia, index) => {
-                    const temTreino = treinos.some(t => t.data === dia.dataFormatada);
+                    const estaMarcado = diaEstaMarcado(dia.dataFormatada);
                     const treinosDoDia = treinos.filter(t => t.data === dia.dataFormatada);
-                    const diaSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][index];
+                    const temTreinoReal = treinosDoDia.length > 0;
+                    const marcadoManualmente = Object.prototype.hasOwnProperty.call(diasMarcadosRecompensa, dia.dataFormatada);
                     
                     return (
-                      <div
+                      <button
                         key={index}
-                        className={`p-4 rounded-xl border-2 transition-all ${
-                          temTreino 
+                        type="button"
+                        onClick={() => toggleDiaMarcado(dia.dataFormatada)}
+                        className={`w-full p-4 rounded-xl border-2 transition-all cursor-pointer hover:shadow-md ${
+                          estaMarcado 
                             ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300' 
-                            : 'bg-gray-50 border-gray-200'
+                            : 'bg-gray-50 border-gray-200 hover:border-gray-300'
                         }`}
                       >
                         <div className="flex justify-between items-center">
                           <div className="flex items-center gap-3">
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                              temTreino ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'
+                              estaMarcado ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-600'
                             }`}>
-                              {temTreino ? <Check size={20} /> : diaSemana}
+                              {estaMarcado ? <Check size={20} /> : dia.diaSemana}
                             </div>
-                            <div>
+                            <div className="text-left">
                               <p className="font-bold text-gray-800">
-                                {diaSemana} - {dia.dataFormatada}
+                                {dia.diaSemana} - {dia.dataFormatada}
                               </p>
-                              {temTreino && (
+                              {temTreinoReal && (
                                 <p className="text-sm text-gray-600">
                                   {treinosDoDia.length} treino(s): {treinosDoDia.map(t => t.subcategoria).join(', ')}
+                                </p>
+                              )}
+                              {marcadoManualmente && !temTreinoReal && estaMarcado && (
+                                <p className="text-xs text-blue-600 font-semibold">
+                                  ✓ Marcado manualmente
+                                </p>
+                              )}
+                              {marcadoManualmente && temTreinoReal && !estaMarcado && (
+                                <p className="text-xs text-red-600 font-semibold">
+                                  ✗ Desmarcado manualmente
                                 </p>
                               )}
                             </div>
                           </div>
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -1476,13 +1687,16 @@ const getDadosGraficoLinha = () => {
                     📊 Resumo da Semana:
                   </p>
                   <p className="text-gray-700">
-                    • Total de dias com treino: <strong>{obterSemanaAtual().filter(dia => treinos.some(t => t.data === dia.dataFormatada)).length}</strong> de 7
+                    • Total de dias marcados: <strong>{obterSemanaAtual().filter(dia => diaEstaMarcado(dia.dataFormatada)).length}</strong> de {obterSemanaAtual().length}
                   </p>
                   <p className="text-gray-700">
-                    • Dias de descanso: <strong>{7 - obterSemanaAtual().filter(dia => treinos.some(t => t.data === dia.dataFormatada)).length}</strong>
+                    • Dias de descanso: <strong>{obterSemanaAtual().length - obterSemanaAtual().filter(dia => diaEstaMarcado(dia.dataFormatada)).length}</strong>
                   </p>
                   <p className="text-xs text-gray-600 mt-2">
-                    💡 Para ganhar recompensa: mínimo 4 dias de treino com até 2 dias de descanso
+                    💡 Para ganhar recompensa: mínimo <strong>{calcularMinimoTreinos(obterSemanaAtual())}</strong> dias de treino
+                    {!verificarSemanaCompleta(obterSemanaAtual()).completa && 
+                      ` (ajustado para semana incompleta)`
+                    }
                   </p>
                 </div>
                 
@@ -1493,6 +1707,50 @@ const getDadosGraficoLinha = () => {
                   <Award size={24} />
                   Reivindicar Recompensa
                 </button>
+              </div>
+            </div>
+          )}
+          
+          {/* Modal de Treinos Insuficientes */}
+          {mostrarModalInsuficiente && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+              <div className="bg-white rounded-3xl shadow-2xl p-6 max-w-md w-full">
+                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <X className="text-red-500" size={28} />
+                  Treinos Insuficientes
+                </h3>
+                <p className="text-gray-700 mb-6">{mensagemModalInsuficiente}</p>
+                
+                {tentativasRecompensa === 1 ? (
+                  <div className="flex gap-3">
+                    <button
+                      onClick={fecharModalInsuficiente}
+                      className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-2xl font-bold hover:bg-gray-300 transition-colors"
+                    >
+                      Fechar
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-sm text-amber-600 font-semibold">
+                      ⚠️ Segunda tentativa: Você pode conceder a recompensa manualmente
+                    </p>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={fecharModalInsuficiente}
+                        className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-2xl font-bold hover:bg-gray-300 transition-colors"
+                      >
+                        Fechar
+                      </button>
+                      <button
+                        onClick={recompensarMesmoAssim}
+                        className="flex-1 bg-gradient-to-r from-amber-500 to-yellow-500 text-white py-3 rounded-2xl font-bold hover:from-amber-600 hover:to-yellow-600 transition-colors"
+                      >
+                        Recompensar Mesmo Assim
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
