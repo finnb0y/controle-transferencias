@@ -48,9 +48,40 @@
     position: relative;
   }
   
+  .treino-background-dia {
+    background-image: url('/treino-background-dia.png');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: scroll;
+    position: relative;
+  }
+  
+  .treino-background-dia::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(251, 207, 232, 0.3) 0%, rgba(224, 242, 254, 0.3) 100%);
+    z-index: -1;
+  }
+  
+  .treino-background-noite {
+    background-image: url('/treino-background-noite.png');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: scroll;
+    position: relative;
+  }
+  
   /* Fixed attachment for desktop devices only (better performance) */
   @media (min-width: 1024px) {
-    .treino-background {
+    .treino-background,
+    .treino-background-dia,
+    .treino-background-noite {
       background-attachment: fixed;
     }
   }
@@ -67,8 +98,21 @@
     z-index: -1;
   }
   
+  .treino-background-noite::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(30, 27, 75, 0.3) 0%, rgba(88, 28, 135, 0.3) 100%);
+    z-index: -1;
+  }
+  
   /* Ensures content is above background */
-  .treino-background > * {
+  .treino-background > *,
+  .treino-background-dia > *,
+  .treino-background-noite > * {
     position: relative;
     z-index: 1;
   }
