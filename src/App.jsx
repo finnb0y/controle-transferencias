@@ -62,12 +62,8 @@ const ControleTransferencias = () => {
   const [mostrarSeletorData, setMostrarSeletorData] = useState(false);
   const [semanasRecompensadas, setSemanasRecompensadas] = useState([]); // Lista de semanas que receberam recompensas
   
-  // Estados para funcionalidade de deslizar (swipe)
+  // Estado para mostrar estatísticas como modal
   const [mostrarEstatisticas, setMostrarEstatisticas] = useState(false);
-  const [posicaoSwipe, setPosicaoSwipe] = useState(0);
-  const swipeStartRef = useRef(0);
-  const swipeContainerRef = useRef(null);
-  const isDraggingRef = useRef(false);
 
 
   const [formulario, setFormulario] = useState({
@@ -1868,58 +1864,8 @@ const getDadosGraficoLinha = () => {
       { name: 'Intensidade', value: estatisticas.tiposContagem.intensidade || 0, color: TIPOS_TREINO.intensidade.cor }
     ].filter(item => item.value > 0);
     
-    // Swipe configuration constants
-    const SWIPE_THRESHOLD = 150; // px - minimum swipe distance to trigger transition
-    const SWIPE_MAX_DISTANCE = 300; // px - maximum swipe distance
-    
-    // Swipe handlers
-    const handleSwipeStart = (e) => {
-      // Only handle left mouse button for mouse events
-      if (e.type === 'mousedown' && e.button !== 0) return;
-      
-      e.preventDefault();
-      isDraggingRef.current = true;
-      const touch = e.touches ? e.touches[0] : e;
-      swipeStartRef.current = touch.clientX;
-    };
-    
-    const handleSwipeMove = (e) => {
-      if (!isDraggingRef.current) return;
-      
-      e.preventDefault();
-      const touch = e.touches ? e.touches[0] : e;
-      const deltaX = touch.clientX - swipeStartRef.current;
-      
-      // Only allow swiping right (positive deltaX) and limit the distance
-      if (deltaX > 0) {
-        setPosicaoSwipe(Math.min(deltaX, SWIPE_MAX_DISTANCE));
-      }
-    };
-    
-    const handleSwipeEnd = () => {
-      if (!isDraggingRef.current) return;
-      isDraggingRef.current = false;
-      
-      // If swiped more than threshold, show statistics
-      if (posicaoSwipe > SWIPE_THRESHOLD) {
-        setMostrarEstatisticas(true);
-        setPosicaoSwipe(SWIPE_MAX_DISTANCE);
-      } else {
-        // Otherwise, reset to calendar view
-        setMostrarEstatisticas(false);
-        setPosicaoSwipe(0);
-      }
-    };
-    
     const toggleEstatisticas = () => {
-      if (mostrarEstatisticas) {
-        setMostrarEstatisticas(false);
-        setPosicaoSwipe(0);
-      } else {
-        setMostrarEstatisticas(true);
-        setPosicaoSwipe(SWIPE_MAX_DISTANCE);
-        setPosicaoSwipe(SWIPE_MAX_DISTANCE);
-      }
+      setMostrarEstatisticas(!mostrarEstatisticas);
     };
     
     return (
@@ -1937,169 +1883,10 @@ const getDadosGraficoLinha = () => {
             </button>
           </div>
 
-          {/* Swipeable Container with Calendar and Statistics */}
-          <div className="relative overflow-hidden rounded-3xl shadow-xl mb-6">
-            <div 
-              ref={swipeContainerRef}
-              className="flex transition-transform duration-300 ease-out"
-              style={{ transform: `translateX(${posicaoSwipe}px)` }}
-              onTouchStart={handleSwipeStart}
-              onTouchMove={handleSwipeMove}
-              onTouchEnd={handleSwipeEnd}
-              onMouseDown={handleSwipeStart}
-              onMouseMove={handleSwipeMove}
-              onMouseUp={handleSwipeEnd}
-              onMouseLeave={handleSwipeEnd}
-            >
-              {/* Statistics Panel (shown when swiping right) */}
-              <div 
-                className={`flex-shrink-0 w-full p-4 sm:p-6 ${
-                  modoNoturno ? 'bg-slate-800/90' : 'bg-white'
-                }`}
-                style={{ marginLeft: '-100%' }}
-              >
-                <h2 className={`text-xl sm:text-2xl font-bold mb-4 flex items-center gap-2 ${
-                  modoNoturno ? 'text-slate-100' : 'text-gray-800'
-                }`}>
-                  <PieChart className={modoNoturno ? 'text-blue-400' : 'text-blue-600'} size={24} />
-                  Estatísticas do Mês
-                </h2>
-                
-                <div className="grid grid-cols-1 gap-4 mb-6">
-                  {/* Dias de Treino */}
-                  <div className={`p-4 rounded-xl ${
-                    modoNoturno 
-                      ? 'bg-gradient-to-br from-blue-900/30 to-indigo-900/30' 
-                      : 'bg-gradient-to-br from-blue-50 to-indigo-50'
-                  }`}>
-                    <p className={`text-sm font-semibold mb-1 ${
-                      modoNoturno ? 'text-slate-300' : 'text-gray-600'
-                    }`}>
-                      Dias de Treino
-                    </p>
-                    <p className={`text-3xl font-bold ${
-                      modoNoturno ? 'text-blue-400' : 'text-blue-600'
-                    }`}>
-                      {estatisticas.diasComTreino}
-                    </p>
-                    <p className={`text-xs ${
-                      modoNoturno ? 'text-slate-400' : 'text-gray-500'
-                    }`}>
-                      de {diasNoMes} dias
-                    </p>
-                  </div>
-                  
-                  {/* Total de Treinos */}
-                  <div className={`p-4 rounded-xl ${
-                    modoNoturno 
-                      ? 'bg-gradient-to-br from-purple-900/30 to-pink-900/30' 
-                      : 'bg-gradient-to-br from-purple-50 to-pink-50'
-                  }`}>
-                    <p className={`text-sm font-semibold mb-1 ${
-                      modoNoturno ? 'text-slate-300' : 'text-gray-600'
-                    }`}>
-                      Total de Treinos
-                    </p>
-                    <p className={`text-3xl font-bold ${
-                      modoNoturno ? 'text-purple-400' : 'text-purple-600'
-                    }`}>
-                      {estatisticas.totalTreinos}
-                    </p>
-                    <p className={`text-xs ${
-                      modoNoturno ? 'text-slate-400' : 'text-gray-500'
-                    }`}>
-                      {estatisticas.tiposContagem.cardio || 0} cardio, {estatisticas.tiposContagem.intensidade || 0} intensidade
-                    </p>
-                  </div>
-                  
-                  {/* Média por Semana */}
-                  <div className={`p-4 rounded-xl ${
-                    modoNoturno 
-                      ? 'bg-gradient-to-br from-rose-900/30 to-orange-900/30' 
-                      : 'bg-gradient-to-br from-rose-50 to-orange-50'
-                  }`}>
-                    <p className={`text-sm font-semibold mb-1 ${
-                      modoNoturno ? 'text-slate-300' : 'text-gray-600'
-                    }`}>
-                      Média por Semana
-                    </p>
-                    <p className={`text-3xl font-bold ${
-                      modoNoturno ? 'text-rose-400' : 'text-rose-600'
-                    }`}>
-                      {estatisticas.mediaPorSemana}
-                    </p>
-                    <p className={`text-xs ${
-                      modoNoturno ? 'text-slate-400' : 'text-gray-500'
-                    }`}>
-                      dias de treino
-                    </p>
-                  </div>
-                </div>
-                
-                {/* Mini Donut Chart */}
-                {chartData.length > 0 && (
-                  <div className="mt-4">
-                    <h3 className={`text-lg font-semibold mb-3 ${
-                      modoNoturno ? 'text-slate-200' : 'text-gray-700'
-                    }`}>
-                      Distribuição de Treinos
-                    </h3>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <RechartsPie>
-                        <Pie
-                          data={chartData}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={50}
-                          outerRadius={80}
-                          paddingAngle={5}
-                          dataKey="value"
-                        >
-                          {chartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </RechartsPie>
-                    </ResponsiveContainer>
-                    <div className="flex justify-center gap-6 mt-2">
-                      {(estatisticas.tiposContagem.cardio || 0) > 0 && (
-                        <div className="flex items-center gap-2">
-                          <Activity size={16} style={{ color: TIPOS_TREINO.cardio.cor }} />
-                          <span className={`text-sm font-semibold ${
-                            modoNoturno ? 'text-slate-200' : 'text-gray-700'
-                          }`}>
-                            Cardio: {estatisticas.tiposContagem.cardio || 0}
-                          </span>
-                        </div>
-                      )}
-                      {(estatisticas.tiposContagem.intensidade || 0) > 0 && (
-                        <div className="flex items-center gap-2">
-                          <Dumbbell size={16} style={{ color: TIPOS_TREINO.intensidade.cor }} />
-                          <span className={`text-sm font-semibold ${
-                            modoNoturno ? 'text-slate-200' : 'text-gray-700'
-                          }`}>
-                            Intensidade: {estatisticas.tiposContagem.intensidade || 0}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                
-                <button
-                  onClick={toggleEstatisticas}
-                  className="mt-6 w-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-3 rounded-2xl font-bold hover:from-blue-600 hover:to-indigo-600 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Calendar size={20} />
-                  Voltar ao Calendário
-                </button>
-              </div>
-              
-              {/* Calendar Panel */}
-              <div className={`flex-shrink-0 w-full p-4 sm:p-6 relative ${
-                modoNoturno ? 'bg-slate-800/90' : 'bg-white'
-              }`}>
+          {/* Calendar Container */}
+          <div className={`rounded-3xl shadow-xl mb-6 p-4 sm:p-6 relative ${
+            modoNoturno ? 'bg-slate-800/90' : 'bg-white'
+          }`}>
             {/* Reward System Button */}
             <button
               onClick={abrirSistemaRecompensas}
@@ -2261,9 +2048,162 @@ const getDadosGraficoLinha = () => {
                 </div>
               ))}
             </div>
+          </div>
+          
+          {/* Modal de Estatísticas */}
+          {mostrarEstatisticas && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className={`rounded-3xl shadow-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto ${
+                modoNoturno 
+                  ? 'bg-gradient-to-br from-slate-800 to-slate-900' 
+                  : 'bg-gradient-to-br from-white to-blue-50'
+              }`}>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className={`text-2xl font-bold flex items-center gap-2 ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
+                    <PieChart className={modoNoturno ? 'text-blue-400' : 'text-blue-600'} size={32} />
+                    Estatísticas do Mês
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={toggleEstatisticas}
+                    className={`p-2 rounded-full transition-colors ${
+                      modoNoturno 
+                        ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700' 
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+                
+                <p className={`mb-6 ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
+                  {meses[calendarioTreino.mes]} {calendarioTreino.ano}
+                </p>
+                
+                <div className="grid grid-cols-1 gap-4 mb-6">
+                  {/* Dias de Treino */}
+                  <div className={`p-4 rounded-xl ${
+                    modoNoturno 
+                      ? 'bg-gradient-to-br from-blue-900/30 to-indigo-900/30' 
+                      : 'bg-gradient-to-br from-blue-50 to-indigo-50'
+                  }`}>
+                    <p className={`text-sm font-semibold mb-1 ${
+                      modoNoturno ? 'text-slate-300' : 'text-gray-600'
+                    }`}>
+                      Dias de Treino
+                    </p>
+                    <p className={`text-3xl font-bold ${
+                      modoNoturno ? 'text-blue-400' : 'text-blue-600'
+                    }`}>
+                      {estatisticas.diasComTreino}
+                    </p>
+                    <p className={`text-xs ${
+                      modoNoturno ? 'text-slate-400' : 'text-gray-500'
+                    }`}>
+                      de {diasNoMes} dias
+                    </p>
+                  </div>
+                  
+                  {/* Total de Treinos */}
+                  <div className={`p-4 rounded-xl ${
+                    modoNoturno 
+                      ? 'bg-gradient-to-br from-purple-900/30 to-pink-900/30' 
+                      : 'bg-gradient-to-br from-purple-50 to-pink-50'
+                  }`}>
+                    <p className={`text-sm font-semibold mb-1 ${
+                      modoNoturno ? 'text-slate-300' : 'text-gray-600'
+                    }`}>
+                      Total de Treinos
+                    </p>
+                    <p className={`text-3xl font-bold ${
+                      modoNoturno ? 'text-purple-400' : 'text-purple-600'
+                    }`}>
+                      {estatisticas.totalTreinos}
+                    </p>
+                    <p className={`text-xs ${
+                      modoNoturno ? 'text-slate-400' : 'text-gray-500'
+                    }`}>
+                      {estatisticas.tiposContagem.cardio || 0} cardio, {estatisticas.tiposContagem.intensidade || 0} intensidade
+                    </p>
+                  </div>
+                  
+                  {/* Média por Semana */}
+                  <div className={`p-4 rounded-xl ${
+                    modoNoturno 
+                      ? 'bg-gradient-to-br from-rose-900/30 to-orange-900/30' 
+                      : 'bg-gradient-to-br from-rose-50 to-orange-50'
+                  }`}>
+                    <p className={`text-sm font-semibold mb-1 ${
+                      modoNoturno ? 'text-slate-300' : 'text-gray-600'
+                    }`}>
+                      Média por Semana
+                    </p>
+                    <p className={`text-3xl font-bold ${
+                      modoNoturno ? 'text-rose-400' : 'text-rose-600'
+                    }`}>
+                      {estatisticas.mediaPorSemana}
+                    </p>
+                    <p className={`text-xs ${
+                      modoNoturno ? 'text-slate-400' : 'text-gray-500'
+                    }`}>
+                      dias de treino
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Mini Donut Chart */}
+                {chartData.length > 0 && (
+                  <div className="mt-4">
+                    <h3 className={`text-lg font-semibold mb-3 ${
+                      modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                    }`}>
+                      Distribuição de Treinos
+                    </h3>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <RechartsPie>
+                        <Pie
+                          data={chartData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {chartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </RechartsPie>
+                    </ResponsiveContainer>
+                    <div className="flex justify-center gap-6 mt-2">
+                      {(estatisticas.tiposContagem.cardio || 0) > 0 && (
+                        <div className="flex items-center gap-2">
+                          <Activity size={16} style={{ color: TIPOS_TREINO.cardio.cor }} />
+                          <span className={`text-sm font-semibold ${
+                            modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                          }`}>
+                            Cardio: {estatisticas.tiposContagem.cardio || 0}
+                          </span>
+                        </div>
+                      )}
+                      {(estatisticas.tiposContagem.intensidade || 0) > 0 && (
+                        <div className="flex items-center gap-2">
+                          <Dumbbell size={16} style={{ color: TIPOS_TREINO.intensidade.cor }} />
+                          <span className={`text-sm font-semibold ${
+                            modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                          }`}>
+                            Intensidade: {estatisticas.tiposContagem.intensidade || 0}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-          </div>
+          )}
           
           {/* Modal de Recompensas */}
           {mostrarRecompensas && (
