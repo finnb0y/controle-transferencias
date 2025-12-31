@@ -4,7 +4,7 @@
 
 Please place a background image with the following specifications in this directory:
 
-- **Filename**: `treino-background.png`
+- **Filename**: `treino-background.png` or `treino-background.jpg` (PNG is currently configured)
 - **Dimensions**: 1920x1080 pixels
 - **Aspect Ratio**: 16:9
 - **Format**: PNG or JPG

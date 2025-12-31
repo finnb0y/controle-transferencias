@@ -100,10 +100,10 @@ Instructions for users to add their own background image.
 ## How to Use Your Own Image
 
 1. Create or obtain a 1920x1080 pixel image (16:9 aspect ratio)
-2. Name it `treino-background.png` (or `.jpg`)
+2. Name it `treino-background.png` or `treino-background.jpg`
 3. Place it in the `public/` directory
-4. Update the CSS in `src/index.css` to reference the correct file extension if needed
-5. The application will automatically use it
+4. If using a different format than currently configured (PNG), update the CSS in `src/index.css` to reference the correct file extension in the `background-image` property
+5. The application will automatically use it with SVG as fallback
 
 ## Technical Notes
 
