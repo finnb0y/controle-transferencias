@@ -1,5 +1,5 @@
 -- Adicionar campos de horário para treinos
--- Esta migração adiciona campos de horário de início e fim, e remove o campo de duração
+-- Esta migração adiciona campos de horário de início e fim para treinos
 -- A duração será calculada automaticamente com base no início e fim
 
 -- Adicionar novos campos de horário
