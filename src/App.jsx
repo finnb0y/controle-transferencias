@@ -801,8 +801,6 @@ const getDadosGraficoLinha = () => {
   const verificarSemanaCompleta = (semana) => {
     if (!semana || semana.length === 0) return { completa: true, diasNoMes: 7 };
     
-    const primeiroDia = semana[0].data;
-    const ultimoDia = semana[6].data;
     const mesReferencia = semanaSelecionadaRecompensa ? new Date(semanaSelecionadaRecompensa).getMonth() : new Date().getMonth();
     
     let diasNoMes = 0;
@@ -837,7 +835,7 @@ const getDadosGraficoLinha = () => {
   // Verificar se um dia está marcado (considerando marcações manuais e treinos reais)
   const diaEstaMarcado = (dataFormatada) => {
     // Se há marcação manual, usa ela
-    if (diasMarcadosRecompensa.hasOwnProperty(dataFormatada)) {
+    if (Object.prototype.hasOwnProperty.call(diasMarcadosRecompensa, dataFormatada)) {
       return diasMarcadosRecompensa[dataFormatada];
     }
     // Caso contrário, verifica se há treino real
@@ -869,12 +867,12 @@ const getDadosGraficoLinha = () => {
     }
     
     // Ordenar dias por data
-    const diasOrdenados = [...diasComTreino].sort((a, b) => a.data - b.data);
+    const diasOrdenados = [...diasComTreino].sort((a, b) => new Date(a.data) - new Date(b.data));
     
     // Verificar lacunas entre treinos
     let maiorLacuna = 0;
     for (let i = 1; i < diasOrdenados.length; i++) {
-      const diff = Math.floor((diasOrdenados[i].data - diasOrdenados[i-1].data) / (1000 * 60 * 60 * 24));
+      const diff = Math.floor((new Date(diasOrdenados[i].data) - new Date(diasOrdenados[i-1].data)) / (1000 * 60 * 60 * 24));
       if (diff > maiorLacuna) {
         maiorLacuna = diff;
       }
@@ -1636,7 +1634,7 @@ const getDadosGraficoLinha = () => {
                     const estaMarcado = diaEstaMarcado(dia.dataFormatada);
                     const treinosDoDia = treinos.filter(t => t.data === dia.dataFormatada);
                     const temTreinoReal = treinosDoDia.length > 0;
-                    const marcadoManualmente = diasMarcadosRecompensa.hasOwnProperty(dia.dataFormatada);
+                    const marcadoManualmente = Object.prototype.hasOwnProperty.call(diasMarcadosRecompensa, dia.dataFormatada);
                     
                     return (
                       <button
