@@ -49,35 +49,49 @@
   - Icons use the same colors as the training types (red for cardio, purple for intensity)
   - Better visual consistency with calendar day icons
 
+### 5. Monthly Statistics Panel
+- **Status**: ✅ Completed
+- **Changes**:
+  - Added comprehensive statistics panel below the calendar
+  - Three key metric cards:
+    - **Days of Training**: Shows unique training days vs total days in month
+    - **Total Trainings**: Shows total count with breakdown (cardio vs intensity)
+    - **Average per Week**: Calculates and displays average training days per week
+  - Donut chart visualization:
+    - Uses Recharts library
+    - Shows distribution of cardio vs intensity workouts
+    - Inner radius design for cleaner look
+    - Responsive to screen size
+    - Includes legend with icons
+  - Full night mode support with pastel gradient backgrounds
+  - Responsive grid layout (3 columns on desktop, 1 column on mobile)
+
 ## Pending Features 🔄
 
-### 5. Swipeable Calendar with Statistics View (Mobile)
-- **Status**: ⏳ Not Implemented
+### 6. Swipeable Calendar with Statistics View (Mobile)
+- **Status**: ⏳ Not Implemented (Low Priority)
 - **Requirements**:
   - Implement touch gesture detection for swipe left/right
-  - Create statistics panel showing:
-    - Donut chart with training type distribution for the month
-    - Counter of training days in the month
-    - Average trainings per week
+  - Enable toggling between calendar and statistics views on mobile
   - Add smooth animations when transitioning between views
   - Use CSS transforms for slide animations
+- **Note**: With the statistics panel now visible below the calendar, this feature is less critical
 
-### 6. Desktop Side-by-Side Layout
-- **Status**: ⏳ Not Implemented
+### 7. Desktop Side-by-Side Layout
+- **Status**: ⏳ Not Implemented (Low Priority)
 - **Requirements**:
   - Use CSS Grid to create two-column layout on desktop (lg breakpoint)
   - Left column: Square calendar
   - Right column: Statistics (donut chart, counters)
   - Ensure proper responsive behavior
+- **Note**: Current vertical stacking works well, but side-by-side could be explored later
 
-### 7. Statistics Calculations
-- **Status**: ⏳ Not Implemented
-- **Needed Functions**:
-  - `calculateMonthStats()`: Calculate statistics for current month
-    - Total training days
-    - Training type distribution (cardio vs intensity)
-    - Average trainings per week
-  - Integrate with Recharts for donut chart visualization
+### 8. Animation Enhancements
+- **Status**: ⏳ Not Implemented (Optional)
+- **Ideas**:
+  - Fade-in animations when statistics update
+  - Smooth transitions when changing months
+  - Consider using CSS transitions or Framer Motion
 
 ## Technical Details
 
@@ -102,26 +116,28 @@ const renderWorkoutIcons = (treinosDoDia) => {
 
 ## Next Steps
 
-To complete the remaining features, the following work is needed:
+Most core features have been implemented successfully! The remaining items are optional enhancements:
 
-1. **Add State Management for View Toggle**:
-   - Add `calendarioView` state ('calendar' | 'stats')
-   - Implement touch handlers (onTouchStart, onTouchMove, onTouchEnd)
+1. **Swipeable View (Optional)**:
+   - Could add swipe gestures to toggle between calendar and stats on mobile
+   - However, vertical scrolling already provides good UX
 
-2. **Create Statistics Component**:
-   - Build `MonthStatistics` component with:
-     - Donut chart using Recharts
-     - Training days counter
-     - Average per week display
+2. **Side-by-Side Desktop Layout (Optional)**:
+   - Could implement CSS Grid two-column layout for larger screens
+   - Current vertical layout is clean and works well
 
-3. **Implement Responsive Layout**:
-   - Mobile: Single swipeable view with translation animations
-   - Desktop: Grid layout with calendar and stats side by side
+3. **Animation Polish (Optional)**:
+   - Add subtle animations for month transitions
+   - Animate statistics panel when values change
+   - Consider Framer Motion or CSS transitions
 
-4. **Add Animations**:
-   - Slide transitions for mobile swipe
-   - Fade-in animations for statistics updates
-   - Consider using CSS transitions or Framer Motion
+## Key Features Delivered ✅
+
+1. **Night Mode Integration**: Complete with pastel colors throughout
+2. **Icon-Based Calendar**: Clean workout indicators with smart layouts
+3. **Comprehensive Statistics**: Full monthly insights with donut chart
+4. **Responsive Design**: Works great on mobile and desktop
+5. **Accessibility**: Proper aria-labels and semantic HTML
 
 ## Testing Notes
 
