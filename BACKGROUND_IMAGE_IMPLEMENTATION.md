@@ -17,11 +17,11 @@ Added a new utility class `.treino-background` with the following properties:
 
 ```css
 .treino-background {
-  background-image: url('/treino-background.jpg'), url('/treino-background.svg');
+  background-image: url('/treino-background.png'), url('/treino-background.svg');
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
-  background-attachment: fixed;
+  background-attachment: scroll;
   position: relative;
 }
 ```
@@ -34,9 +34,9 @@ Added a new utility class `.treino-background` with the following properties:
 
 - **`background-repeat: no-repeat`**: Prevents image tiling.
 
-- **`background-attachment: fixed`**: Creates a fixed parallax effect where the background stays in place while content scrolls. **Note**: For better mobile performance, this is only applied on desktop devices (min-width: 1024px). Mobile devices use `scroll` to prevent performance issues, especially on iOS Safari.
+- **`background-attachment: scroll`**: Uses scroll mode for better performance across all devices, especially on mobile browsers like iOS Safari where fixed backgrounds can cause performance issues.
 
-- **Multiple images in `background-image`**: Uses fallback chain - tries `.jpg` first, then `.svg` placeholder.
+- **Multiple images in `background-image`**: Uses fallback chain - tries `.png` first, then `.svg` placeholder.
 
 #### Fallback Gradient:
 
@@ -100,9 +100,10 @@ Instructions for users to add their own background image.
 ## How to Use Your Own Image
 
 1. Create or obtain a 1920x1080 pixel image (16:9 aspect ratio)
-2. Name it `treino-background.jpg` (or `.png`)
+2. Name it `treino-background.png` or `treino-background.jpg`
 3. Place it in the `public/` directory
-4. The application will automatically use it
+4. If using a different format than currently configured (PNG), update the CSS in `src/index.css` to reference the correct file extension in the `background-image` property
+5. The application will automatically use it with SVG as fallback
 
 ## Technical Notes
 

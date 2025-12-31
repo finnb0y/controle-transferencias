@@ -40,7 +40,7 @@
   /* Background image configuration for training section */
   /* Ensures center-focused display with responsive lateral cropping */
   .treino-background {
-    background-image: url('/treino-background.jpg'), url('/treino-background.svg');
+    background-image: url('/treino-background.png'), url('/treino-background.svg');
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
