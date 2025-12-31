@@ -1813,6 +1813,34 @@ const getDadosGraficoLinha = () => {
     const diasNoMes = getDiasNoMes(calendarioTreino.mes, calendarioTreino.ano);
     const primeiroDia = getPrimeiroDiaSemana(calendarioTreino.mes, calendarioTreino.ano);
     
+    // Calcular estatísticas do mês
+    const calcularEstatisticasMes = () => {
+      const treinosMes = treinos.filter(t => {
+        const [dia, mes, ano] = t.data.split('/').map(Number);
+        return mes - 1 === calendarioTreino.mes && ano === calendarioTreino.ano;
+      });
+      
+      const diasComTreino = new Set(treinosMes.map(t => t.data)).size;
+      const tiposContagem = { cardio: 0, intensidade: 0 };
+      
+      treinosMes.forEach(t => {
+        tiposContagem[t.tipo] = (tiposContagem[t.tipo] || 0) + 1;
+      });
+      
+      // Calcular média de treinos por semana
+      const semanasNoMes = Math.ceil(diasNoMes / 7);
+      const mediaPorSemana = semanasNoMes > 0 ? (diasComTreino / semanasNoMes).toFixed(1) : 0;
+      
+      return {
+        diasComTreino,
+        totalTreinos: treinosMes.length,
+        tiposContagem,
+        mediaPorSemana
+      };
+    };
+    
+    const estatisticas = calcularEstatisticasMes();
+    
     return (
       <div className={`min-h-screen p-4 ${modoNoturno ? 'treino-background-noite' : 'treino-background-dia'}`} style={{ fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif' }}>
         <div className="max-w-5xl mx-auto">
@@ -1980,6 +2008,146 @@ const getDadosGraficoLinha = () => {
                 </div>
               ))}
             </div>
+          </div>
+          
+          {/* Statistics Panel */}
+          <div className={`rounded-3xl shadow-xl p-4 sm:p-6 mt-6 ${
+            modoNoturno ? 'bg-slate-800/90' : 'bg-white'
+          }`}>
+            <h2 className={`text-xl sm:text-2xl font-bold mb-4 flex items-center gap-2 ${
+              modoNoturno ? 'text-slate-100' : 'text-gray-800'
+            }`}>
+              <PieChart className={modoNoturno ? 'text-blue-400' : 'text-blue-600'} size={24} />
+              Estatísticas do Mês
+            </h2>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Dias de Treino */}
+              <div className={`p-4 rounded-xl ${
+                modoNoturno 
+                  ? 'bg-gradient-to-br from-blue-900/30 to-indigo-900/30' 
+                  : 'bg-gradient-to-br from-blue-50 to-indigo-50'
+              }`}>
+                <p className={`text-sm font-semibold mb-1 ${
+                  modoNoturno ? 'text-slate-300' : 'text-gray-600'
+                }`}>
+                  Dias de Treino
+                </p>
+                <p className={`text-3xl font-bold ${
+                  modoNoturno ? 'text-blue-400' : 'text-blue-600'
+                }`}>
+                  {estatisticas.diasComTreino}
+                </p>
+                <p className={`text-xs ${
+                  modoNoturno ? 'text-slate-400' : 'text-gray-500'
+                }`}>
+                  de {diasNoMes} dias
+                </p>
+              </div>
+              
+              {/* Total de Treinos */}
+              <div className={`p-4 rounded-xl ${
+                modoNoturno 
+                  ? 'bg-gradient-to-br from-purple-900/30 to-pink-900/30' 
+                  : 'bg-gradient-to-br from-purple-50 to-pink-50'
+              }`}>
+                <p className={`text-sm font-semibold mb-1 ${
+                  modoNoturno ? 'text-slate-300' : 'text-gray-600'
+                }`}>
+                  Total de Treinos
+                </p>
+                <p className={`text-3xl font-bold ${
+                  modoNoturno ? 'text-purple-400' : 'text-purple-600'
+                }`}>
+                  {estatisticas.totalTreinos}
+                </p>
+                <p className={`text-xs ${
+                  modoNoturno ? 'text-slate-400' : 'text-gray-500'
+                }`}>
+                  {estatisticas.tiposContagem.cardio} cardio, {estatisticas.tiposContagem.intensidade} intensidade
+                </p>
+              </div>
+              
+              {/* Média por Semana */}
+              <div className={`p-4 rounded-xl ${
+                modoNoturno 
+                  ? 'bg-gradient-to-br from-rose-900/30 to-orange-900/30' 
+                  : 'bg-gradient-to-br from-rose-50 to-orange-50'
+              }`}>
+                <p className={`text-sm font-semibold mb-1 ${
+                  modoNoturno ? 'text-slate-300' : 'text-gray-600'
+                }`}>
+                  Média por Semana
+                </p>
+                <p className={`text-3xl font-bold ${
+                  modoNoturno ? 'text-rose-400' : 'text-rose-600'
+                }`}>
+                  {estatisticas.mediaPorSemana}
+                </p>
+                <p className={`text-xs ${
+                  modoNoturno ? 'text-slate-400' : 'text-gray-500'
+                }`}>
+                  dias de treino
+                </p>
+              </div>
+            </div>
+            
+            {/* Mini Donut Chart with Recharts */}
+            {(estatisticas.tiposContagem.cardio > 0 || estatisticas.tiposContagem.intensidade > 0) && (
+              <div className="mt-6">
+                <h3 className={`text-lg font-semibold mb-3 ${
+                  modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                }`}>
+                  Distribuição de Treinos
+                </h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <RechartsPie>
+                    <Pie
+                      data={[
+                        { name: 'Cardio', value: estatisticas.tiposContagem.cardio, color: TIPOS_TREINO.cardio.cor },
+                        { name: 'Intensidade', value: estatisticas.tiposContagem.intensidade, color: TIPOS_TREINO.intensidade.cor }
+                      ].filter(item => item.value > 0)}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {[
+                        { name: 'Cardio', value: estatisticas.tiposContagem.cardio, color: TIPOS_TREINO.cardio.cor },
+                        { name: 'Intensidade', value: estatisticas.tiposContagem.intensidade, color: TIPOS_TREINO.intensidade.cor }
+                      ].filter(item => item.value > 0).map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </RechartsPie>
+                </ResponsiveContainer>
+                <div className="flex justify-center gap-6 mt-2">
+                  {estatisticas.tiposContagem.cardio > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Activity size={16} style={{ color: TIPOS_TREINO.cardio.cor }} />
+                      <span className={`text-sm font-semibold ${
+                        modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                      }`}>
+                        Cardio: {estatisticas.tiposContagem.cardio}
+                      </span>
+                    </div>
+                  )}
+                  {estatisticas.tiposContagem.intensidade > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Dumbbell size={16} style={{ color: TIPOS_TREINO.intensidade.cor }} />
+                      <span className={`text-sm font-semibold ${
+                        modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                      }`}>
+                        Intensidade: {estatisticas.tiposContagem.intensidade}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Modal de Recompensas */}
