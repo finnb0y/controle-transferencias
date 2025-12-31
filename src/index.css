@@ -36,4 +36,40 @@
   .animate-shrink-width {
     animation: shrink-width var(--confirmation-timeout) linear;
   }
+  
+  /* Background image configuration for training section */
+  /* Ensures center-focused display with responsive lateral cropping */
+  .treino-background {
+    background-image: url('/treino-background.jpg'), url('/treino-background.svg');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: scroll; /* Use scroll for better mobile performance */
+    position: relative;
+  }
+  
+  /* Fixed attachment for desktop devices only (better performance) */
+  @media (min-width: 1024px) {
+    .treino-background {
+      background-attachment: fixed;
+    }
+  }
+  
+  /* Fallback gradient if image is not available */
+  .treino-background::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(251, 207, 232, 0.3) 0%, rgba(224, 242, 254, 0.3) 100%);
+    z-index: -1;
+  }
+  
+  /* Ensures content is above background */
+  .treino-background > * {
+    position: relative;
+    z-index: 1;
+  }
 }

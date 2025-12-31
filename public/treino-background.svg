@@ -1,0 +1,47 @@
+<svg width="1920" height="1080" xmlns="http://www.w3.org/2000/svg">
+  <!-- Gradient Background -->
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#764ba2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f093fb;stop-opacity:1" />
+    </linearGradient>
+    <pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse">
+      <path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
+    </pattern>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#grad1)"/>
+  <rect width="1920" height="1080" fill="url(#grid)"/>
+  
+  <!-- Center Focus Area Indicator -->
+  <circle cx="960" cy="540" r="300" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="4" stroke-dasharray="20,10"/>
+  
+  <!-- Workout Icons -->
+  <g transform="translate(960, 540)">
+    <!-- Dumbbell Icon -->
+    <g transform="translate(-100, -150)">
+      <rect x="-60" y="-10" width="120" height="20" rx="5" fill="rgba(255,255,255,0.8)"/>
+      <circle cx="-70" cy="0" r="25" fill="rgba(255,255,255,0.9)"/>
+      <circle cx="70" cy="0" r="25" fill="rgba(255,255,255,0.9)"/>
+    </g>
+    
+    <!-- Running Figure -->
+    <g transform="translate(100, -150)">
+      <circle cx="0" cy="-30" r="15" fill="rgba(255,255,255,0.9)"/>
+      <path d="M -10 0 L 0 -15 L 10 0 L 0 30 L -15 45" stroke="rgba(255,255,255,0.9)" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="M 0 30 L 15 50" stroke="rgba(255,255,255,0.9)" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="M -10 0 L -25 -10" stroke="rgba(255,255,255,0.9)" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="M 10 0 L 25 5" stroke="rgba(255,255,255,0.9)" stroke-width="4" fill="none" stroke-linecap="round"/>
+    </g>
+    
+    <!-- Center Text -->
+    <text x="0" y="100" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="rgba(255,255,255,0.95)" text-anchor="middle">TREINOS</text>
+    <text x="0" y="150" font-family="Arial, sans-serif" font-size="32" fill="rgba(255,255,255,0.8)" text-anchor="middle">Centro Prioritário • 1920x1080</text>
+  </g>
+  
+  <!-- Side Markers (will be cropped on smaller screens) -->
+  <text x="200" y="540" font-family="Arial, sans-serif" font-size="24" fill="rgba(255,255,255,0.6)" text-anchor="middle" transform="rotate(-90 200 540)">Cortado em telas menores ←</text>
+  <text x="1720" y="540" font-family="Arial, sans-serif" font-size="24" fill="rgba(255,255,255,0.6)" text-anchor="middle" transform="rotate(90 1720 540)">→ Cortado em telas menores</text>
+</svg>

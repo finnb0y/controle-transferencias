@@ -1281,7 +1281,7 @@ const getDadosGraficoLinha = () => {
     const primeiroDia = getPrimeiroDiaSemana(calendarioTreino.mes, calendarioTreino.ano);
     
     return (
-      <div className="min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 p-4" style={{ fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif' }}>
+      <div className="min-h-screen treino-background p-4" style={{ fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif' }}>
         <div className="max-w-5xl mx-auto">
           <button
             onClick={() => setTela('inicial')}
