@@ -34,7 +34,7 @@ Added a new utility class `.treino-background` with the following properties:
 
 - **`background-repeat: no-repeat`**: Prevents image tiling.
 
-- **`background-attachment: fixed`**: Creates a fixed parallax effect where the background stays in place while content scrolls.
+- **`background-attachment: fixed`**: Creates a fixed parallax effect where the background stays in place while content scrolls. **Note**: For better mobile performance, this is only applied on desktop devices (min-width: 1024px). Mobile devices use `scroll` to prevent performance issues, especially on iOS Safari.
 
 - **Multiple images in `background-image`**: Uses fallback chain - tries `.jpg` first, then `.svg` placeholder.
 
@@ -115,7 +115,7 @@ Instructions for users to add their own background image.
    - On wide screens: full image or top/bottom crop if taller
    - Image center is the anchor point
 
-3. **Fixed attachment** creates a modern parallax effect and keeps the background stable during scrolling.
+3. **Fixed attachment** creates a modern parallax effect on desktop devices. On mobile, it uses scroll mode for better performance and iOS Safari compatibility.
 
 ### Browser Compatibility
 

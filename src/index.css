@@ -44,8 +44,15 @@
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
-    background-attachment: fixed;
+    background-attachment: scroll; /* Use scroll for better mobile performance */
     position: relative;
+  }
+  
+  /* Fixed attachment for desktop devices only (better performance) */
+  @media (min-width: 1024px) {
+    .treino-background {
+      background-attachment: fixed;
+    }
   }
   
   /* Fallback gradient if image is not available */
