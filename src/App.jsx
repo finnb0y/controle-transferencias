@@ -1868,8 +1868,16 @@ const getDadosGraficoLinha = () => {
       { name: 'Intensidade', value: estatisticas.tiposContagem.intensidade || 0, color: TIPOS_TREINO.intensidade.cor }
     ].filter(item => item.value > 0);
     
+    // Swipe configuration constants
+    const SWIPE_THRESHOLD = 150; // px - minimum swipe distance to trigger transition
+    const SWIPE_MAX_DISTANCE = 300; // px - maximum swipe distance
+    
     // Swipe handlers
     const handleSwipeStart = (e) => {
+      // Only handle left mouse button for mouse events
+      if (e.type === 'mousedown' && e.button !== 0) return;
+      
+      e.preventDefault();
       isDraggingRef.current = true;
       const touch = e.touches ? e.touches[0] : e;
       swipeStartRef.current = touch.clientX;
@@ -1878,12 +1886,13 @@ const getDadosGraficoLinha = () => {
     const handleSwipeMove = (e) => {
       if (!isDraggingRef.current) return;
       
+      e.preventDefault();
       const touch = e.touches ? e.touches[0] : e;
       const deltaX = touch.clientX - swipeStartRef.current;
       
       // Only allow swiping right (positive deltaX) and limit the distance
       if (deltaX > 0) {
-        setPosicaoSwipe(Math.min(deltaX, 300));
+        setPosicaoSwipe(Math.min(deltaX, SWIPE_MAX_DISTANCE));
       }
     };
     
@@ -1891,10 +1900,10 @@ const getDadosGraficoLinha = () => {
       if (!isDraggingRef.current) return;
       isDraggingRef.current = false;
       
-      // If swiped more than 150px, show statistics
-      if (posicaoSwipe > 150) {
+      // If swiped more than threshold, show statistics
+      if (posicaoSwipe > SWIPE_THRESHOLD) {
         setMostrarEstatisticas(true);
-        setPosicaoSwipe(300);
+        setPosicaoSwipe(SWIPE_MAX_DISTANCE);
       } else {
         // Otherwise, reset to calendar view
         setMostrarEstatisticas(false);
@@ -1908,7 +1917,8 @@ const getDadosGraficoLinha = () => {
         setPosicaoSwipe(0);
       } else {
         setMostrarEstatisticas(true);
-        setPosicaoSwipe(300);
+        setPosicaoSwipe(SWIPE_MAX_DISTANCE);
+        setPosicaoSwipe(SWIPE_MAX_DISTANCE);
       }
     };
     
@@ -2093,7 +2103,7 @@ const getDadosGraficoLinha = () => {
             {/* Reward System Button */}
             <button
               onClick={abrirSistemaRecompensas}
-              className="absolute top-4 right-4 bg-gradient-to-br from-amber-400 to-yellow-500 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110 z-10"
+              className="absolute top-4 right-4 bg-gradient-to-br from-amber-400 to-yellow-500 text-white p-3 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110 z-20"
               title="Sistema de Recompensas"
             >
               <Award size={24} />
