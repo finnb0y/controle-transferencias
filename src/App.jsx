@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, DollarSign, X, Download, Filter, PieChart, TrendingUp, Home, Plus, Eye, Dumbbell, Check, Edit2, Save, Award } from 'lucide-react';
+import { Calendar, DollarSign, X, Download, Filter, PieChart, TrendingUp, Home, Plus, Eye, Dumbbell, Check, Edit2, Save, Award, Moon, Sun } from 'lucide-react';
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { supabase } from './supabaseClient';
 
@@ -8,6 +8,7 @@ const CONFIRMATION_TIMEOUT = 4000; // 4 seconds
 const ControleTransferencias = () => {
   const [tela, setTela] = useState('inicial');
   const [transferencias, setTransferencias] = useState([]);
+  const [modoNoturno, setModoNoturno] = useState(false);
   const [carregando, setCarregando] = useState(true);
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
   const [mostrarAnos, setMostrarAnos] = useState(false);
@@ -520,6 +521,177 @@ const getDadosGraficoLinha = () => {
     return treinos.filter(t => t.data === dataFormatada);
   };
   
+  // Render colored training divisions for calendar days
+  const renderTrainingDivisions = (treinosDoDia, dia) => {
+    if (treinosDoDia.length === 0) return null;
+    if (treinosDoDia.length === 1) return null; // Single training uses simple background
+    
+    const cores = treinosDoDia.map(t => TIPOS_TREINO[t.tipo]?.cor || '#666');
+    const isDiaImpar = dia % 2 !== 0;
+    
+    if (treinosDoDia.length === 2) {
+      // Diagonal division - different for even/odd days
+      return (
+        <div className="absolute inset-0 rounded-xl overflow-hidden">
+          <div 
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: isDiaImpar 
+                ? `linear-gradient(45deg, ${cores[0]} 0%, ${cores[0]} 48%, white 48%, white 52%, ${cores[1]} 52%, ${cores[1]} 100%)`
+                : `linear-gradient(135deg, ${cores[0]} 0%, ${cores[0]} 48%, white 48%, white 52%, ${cores[1]} 52%, ${cores[1]} 100%)`
+            }}
+          />
+        </div>
+      );
+    }
+    
+    if (treinosDoDia.length === 3) {
+      // Triangular format
+      return (
+        <div className="absolute inset-0 rounded-xl overflow-hidden">
+          {/* Top triangle */}
+          <div 
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '50%',
+              backgroundColor: cores[0],
+              clipPath: 'polygon(0 0, 100% 0, 50% 100%)',
+              border: '1px solid white'
+            }}
+          />
+          {/* Bottom left */}
+          <div 
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              width: '50%',
+              height: '50%',
+              backgroundColor: cores[1],
+              clipPath: 'polygon(0 0, 100% 100%, 0 100%)',
+              border: '1px solid white'
+            }}
+          />
+          {/* Bottom right */}
+          <div 
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              right: 0,
+              width: '50%',
+              height: '50%',
+              backgroundColor: cores[2],
+              clipPath: 'polygon(0 100%, 100% 100%, 100% 0)',
+              border: '1px solid white'
+            }}
+          />
+        </div>
+      );
+    }
+    
+    if (treinosDoDia.length === 4) {
+      // X format
+      return (
+        <div className="absolute inset-0 rounded-xl overflow-hidden">
+          {/* Top */}
+          <div 
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '50%',
+              backgroundColor: cores[0],
+              clipPath: 'polygon(0 0, 50% 50%, 100% 0)',
+              border: '1px solid white'
+            }}
+          />
+          {/* Right */}
+          <div 
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: '50%',
+              height: '100%',
+              backgroundColor: cores[1],
+              clipPath: 'polygon(0 0, 100% 0, 100% 100%, 50% 50%)',
+              border: '1px solid white'
+            }}
+          />
+          {/* Bottom */}
+          <div 
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              width: '100%',
+              height: '50%',
+              backgroundColor: cores[2],
+              clipPath: 'polygon(0 100%, 50% 50%, 100% 100%)',
+              border: '1px solid white'
+            }}
+          />
+          {/* Left */}
+          <div 
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '50%',
+              height: '100%',
+              backgroundColor: cores[3],
+              clipPath: 'polygon(0 0, 50% 50%, 0 100%)',
+              border: '1px solid white'
+            }}
+          />
+        </div>
+      );
+    }
+    
+    if (treinosDoDia.length >= 5) {
+      // W format for 5 or more trainings
+      const displayCores = cores.slice(0, 5);
+      return (
+        <div className="absolute inset-0 rounded-xl overflow-hidden">
+          {displayCores.map((cor, idx) => {
+            const configs = [
+              { left: '0%', width: '20%', top: '0%', height: '100%' },
+              { left: '20%', width: '20%', top: '50%', height: '50%' },
+              { left: '40%', width: '20%', top: '0%', height: '100%' },
+              { left: '60%', width: '20%', top: '50%', height: '50%' },
+              { left: '80%', width: '20%', top: '0%', height: '100%' }
+            ];
+            const config = configs[idx];
+            return (
+              <div 
+                key={idx}
+                style={{
+                  position: 'absolute',
+                  left: config.left,
+                  top: config.top,
+                  width: config.width,
+                  height: config.height,
+                  backgroundColor: cor,
+                  border: '1px solid white'
+                }}
+              />
+            );
+          })}
+        </div>
+      );
+    }
+    
+    return null;
+  };
+  
   const mudarMesTreino = (direcao) => {
     let novoMes = calendarioTreino.mes + direcao;
     let novoAno = calendarioTreino.ano;
@@ -853,6 +1025,12 @@ const getDadosGraficoLinha = () => {
   
   const obterSemanaAtual = () => {
     return obterSemanaPorData(semanaSelecionadaRecompensa);
+  };
+  
+  // Verificar se uma semana tem pelo menos um treino
+  const semanaTemTreino = (data) => {
+    const semana = obterSemanaPorData(data);
+    return semana.some(dia => treinos.some(t => t.data === dia.dataFormatada));
   };
   
   // Verificar se a semana está completa dentro do mês
@@ -1502,15 +1680,27 @@ const getDadosGraficoLinha = () => {
     const primeiroDia = getPrimeiroDiaSemana(calendarioTreino.mes, calendarioTreino.ano);
     
     return (
-      <div className="min-h-screen treino-background p-4" style={{ fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif' }}>
+      <div className={`min-h-screen p-4 ${modoNoturno ? 'treino-background-noite' : 'treino-background-dia'}`} style={{ fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif' }}>
         <div className="max-w-5xl mx-auto">
-          <button
-            onClick={() => setTela('inicial')}
-            className="mb-6 flex items-center gap-2 bg-white px-6 py-3 rounded-full shadow hover:shadow-md transition-all"
-          >
-            <Home size={20} />
-            Voltar para Início
-          </button>
+          <div className="mb-6 flex items-center gap-3">
+            <button
+              onClick={() => setTela('inicial')}
+              className="flex items-center gap-2 bg-white px-6 py-3 rounded-full shadow hover:shadow-md transition-all"
+            >
+              <Home size={20} />
+              Voltar para Início
+            </button>
+            
+            {/* Night Mode Toggle */}
+            <button
+              onClick={() => setModoNoturno(!modoNoturno)}
+              className="flex items-center gap-2 bg-white px-6 py-3 rounded-full shadow hover:shadow-md transition-all"
+              title={modoNoturno ? 'Modo Diurno' : 'Modo Noturno'}
+            >
+              {modoNoturno ? <Sun size={20} className="text-amber-500" /> : <Moon size={20} className="text-indigo-600" />}
+              <span className="font-semibold">{modoNoturno ? 'Modo Dia' : 'Modo Noite'}</span>
+            </button>
+          </div>
 
           <div className="bg-white rounded-3xl shadow-xl p-4 sm:p-6 mb-6 relative">
             {/* Reward System Button */}
@@ -1582,14 +1772,17 @@ const getDadosGraficoLinha = () => {
                       key={dia}
                       type="button"
                       onClick={() => selecionarDiaTreino(dia)}
-                      className={`relative h-14 sm:h-20 rounded-xl border-2 transition-all hover:shadow-md flex flex-col items-center justify-start p-1 sm:p-2
+                      className={`relative h-14 sm:h-20 rounded-xl border-2 transition-all hover:shadow-md flex flex-col items-center justify-start p-1 sm:p-2 overflow-hidden
                         ${isHoje ? 'border-rose-400 bg-rose-50' : 'border-gray-200 hover:border-rose-300'}
-                        ${treinosDoDia.length > 0 ? 'bg-gradient-to-br from-purple-100 via-pink-100 to-rose-100' : 'bg-white'}
+                        ${treinosDoDia.length === 1 ? 'bg-gradient-to-br from-purple-100 via-pink-100 to-rose-100' : 'bg-white'}
                       `}
                       aria-label={`${dia} de ${meses[calendarioTreino.mes]}${temRecompensa ? ', dia recompensado' : ''}${treinosDoDia.length > 0 ? `, ${treinosDoDia.length} treino(s)` : ''}`}
                     >
-                      {/* Indicador de Recompensa */}
-                      {temRecompensa && (
+                      {/* Colored training divisions for multiple trainings */}
+                      {treinosDoDia.length > 1 && renderTrainingDivisions(treinosDoDia, dia)}
+                      
+                      {/* Indicador de Recompensa - Only show on days with training */}
+                      {temRecompensa && treinosDoDia.length > 0 && (
                         <div 
                           className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 z-10"
                           title="Dia recompensado"
@@ -1603,16 +1796,16 @@ const getDadosGraficoLinha = () => {
                         </div>
                       )}
                       
-                      <span className={`text-sm sm:text-base font-semibold mb-0.5 ${isHoje ? 'text-rose-600' : 'text-gray-700'}`}>
+                      <span className={`relative z-10 text-sm sm:text-base font-semibold mb-0.5 ${isHoje ? 'text-rose-600' : 'text-gray-700'}`}>
                         {dia}
                       </span>
                       
                       {treinosDoDia.length > 0 && (
-                        <div className="flex flex-col gap-0.5 w-full">
+                        <div className="relative z-10 flex flex-col gap-0.5 w-full">
                           {treinosDoDia.slice(0, 2).map((treino, idx) => (
                             <div 
                               key={idx}
-                              className="flex items-center justify-center gap-0.5 text-[10px] sm:text-xs"
+                              className="flex items-center justify-center gap-0.5 text-[10px] sm:text-xs bg-white/80 rounded px-1"
                               style={{ color: TIPOS_TREINO[treino.tipo]?.cor || '#666' }}
                             >
                               <Check size={10} className="sm:w-3 sm:h-3" />
@@ -1620,7 +1813,7 @@ const getDadosGraficoLinha = () => {
                             </div>
                           ))}
                           {treinosDoDia.length > 2 && (
-                            <span className="text-[10px] sm:text-xs text-gray-500 font-semibold">
+                            <span className="text-[10px] sm:text-xs text-gray-500 font-semibold bg-white/80 rounded px-1">
                               +{treinosDoDia.length - 2}
                             </span>
                           )}
@@ -1736,12 +1929,21 @@ const getDadosGraficoLinha = () => {
                       ))}
                       {Array.from({ length: getDiasNoMes(calendarioTreino.mes, calendarioTreino.ano) }).map((_, index) => {
                         const dia = index + 1;
+                        const dataParaSemana = new Date(calendarioTreino.ano, calendarioTreino.mes, dia);
+                        const temTreinoNaSemana = semanaTemTreino(dataParaSemana);
+                        
                         return (
                           <button
                             key={dia}
                             type="button"
-                            onClick={() => selecionarDataParaSemana(dia, calendarioTreino.mes, calendarioTreino.ano)}
-                            className="h-8 rounded-lg border hover:bg-blue-100 hover:border-blue-400 transition-all text-sm"
+                            onClick={() => temTreinoNaSemana && selecionarDataParaSemana(dia, calendarioTreino.mes, calendarioTreino.ano)}
+                            disabled={!temTreinoNaSemana}
+                            className={`h-8 rounded-lg border text-sm transition-all ${
+                              temTreinoNaSemana 
+                                ? 'hover:bg-blue-100 hover:border-blue-400 cursor-pointer' 
+                                : 'opacity-30 cursor-not-allowed border-gray-300'
+                            }`}
+                            title={temTreinoNaSemana ? 'Selecionar esta semana' : 'Esta semana não possui treinos'}
                           >
                             {dia}
                           </button>
