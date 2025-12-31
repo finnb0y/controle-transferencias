@@ -1,6 +1,8 @@
 -- Criação da tabela recompensas para o sistema de controle de treinos
 -- Esta tabela armazena informações sobre recompensas concedidas por semanas de treino
 
+-- Note: Using TEXT for dates to maintain consistency with the rest of the application
+-- which uses DD/MM/YYYY format throughout (see treinos table)
 CREATE TABLE IF NOT EXISTS recompensas (
     id BIGSERIAL PRIMARY KEY,
     data_inicio_semana TEXT NOT NULL, -- Formato: DD/MM/YYYY (domingo da semana)

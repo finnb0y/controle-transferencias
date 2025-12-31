@@ -174,7 +174,8 @@ const ControleTransferencias = () => {
 
       if (error) {
         // Se a tabela não existe, silenciosamente retorna array vazio
-        console.log('Tabela recompensas não encontrada ou erro:', error);
+        // Isso é esperado para novos usuários ou antes de aplicar a migration
+        console.log('Tabela recompensas não encontrada ou erro (esperado na primeira execução):', error);
         setSemanasRecompensadas([]);
         return;
       }
