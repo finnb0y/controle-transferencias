@@ -202,7 +202,7 @@ const ControleTransferencias = () => {
     return `${String(dia).padStart(2, '0')}/${String(mes + 1).padStart(2, '0')}/${ano}`;
   };
 
-  // Generate a 5-week calendar grid (35 days) with complete weeks
+  // Generate a calendar grid with complete weeks (5 or 6 weeks depending on month layout)
   const gerarCalendario5Semanas = (mes, ano) => {
     const primeiroDia = getPrimeiroDiaSemana(mes, ano);
     const diasNoMes = getDiasNoMes(mes, ano);
@@ -858,9 +858,9 @@ const getDadosGraficoLinha = () => {
     setCalendarioTreino({ mes: novoMes, ano: novoAno });
   };
   
-  const selecionarDiaTreino = (dia) => {
-    const dataFormatada = `${String(dia).padStart(2, '0')}/${String(calendarioTreino.mes + 1).padStart(2, '0')}/${calendarioTreino.ano}`;
-    const treinosDoDia = getTreinosNaData(dia, calendarioTreino.mes, calendarioTreino.ano);
+  const selecionarDiaTreino = (dia, mes = calendarioTreino.mes, ano = calendarioTreino.ano) => {
+    const dataFormatada = `${String(dia).padStart(2, '0')}/${String(mes + 1).padStart(2, '0')}/${ano}`;
+    const treinosDoDia = getTreinosNaData(dia, mes, ano);
     
     setDataSelecionadaTreino(dataFormatada);
     
@@ -2030,11 +2030,12 @@ const getDadosGraficoLinha = () => {
                       key={`${ano}-${mes}-${dia}-${index}`}
                       type="button"
                       onClick={() => {
-                        // If clicking on a day from another month, navigate to that month
+                        // If clicking on a day from another month, navigate to that month first
                         if (!mesAtual) {
                           setCalendarioTreino({ mes, ano });
                         }
-                        selecionarDiaTreino(dia);
+                        // Always use the correct month and year for the clicked day
+                        selecionarDiaTreino(dia, mes, ano);
                       }}
                       className={`relative h-14 sm:h-20 rounded-xl border-2 transition-all hover:shadow-md flex flex-col items-center justify-center p-1 sm:p-2 overflow-hidden
                         ${!mesAtual 
