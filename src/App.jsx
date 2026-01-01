@@ -8,7 +8,11 @@ const CONFIRMATION_TIMEOUT = 4000; // 4 seconds
 const ControleTransferencias = () => {
   const [tela, setTela] = useState('inicial');
   const [transferencias, setTransferencias] = useState([]);
-  const [modoNoturno, setModoNoturno] = useState(false);
+  const [modoNoturno, setModoNoturno] = useState(() => {
+    // Retrieve theme from localStorage, default to false (light mode) if not found
+    const savedTheme = localStorage.getItem('modoNoturno');
+    return savedTheme === 'true';
+  });
   const [carregando, setCarregando] = useState(true);
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
   const [mostrarAnos, setMostrarAnos] = useState(false);
@@ -118,6 +122,11 @@ const ControleTransferencias = () => {
       }
     };
   }, []); // Empty dependency array - only run once on mount
+
+  // Save theme to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('modoNoturno', modoNoturno.toString());
+  }, [modoNoturno]);
 
   const carregarDados = async () => {
     try {
