@@ -2027,7 +2027,7 @@ const getDadosGraficoLinha = () => {
 
                   return (
                     <button
-                      key={`${ano}-${mes}-${dia}-${index}`}
+                      key={`${ano}-${mes}-${dia}`}
                       type="button"
                       onClick={() => {
                         // If clicking on a day from another month, navigate to that month first
