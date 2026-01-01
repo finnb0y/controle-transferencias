@@ -202,6 +202,59 @@ const ControleTransferencias = () => {
     return `${String(dia).padStart(2, '0')}/${String(mes + 1).padStart(2, '0')}/${ano}`;
   };
 
+  // Generate a calendar grid with complete weeks (5 or 6 weeks depending on month layout)
+  const gerarCalendario5Semanas = (mes, ano) => {
+    const primeiroDia = getPrimeiroDiaSemana(mes, ano);
+    const diasNoMes = getDiasNoMes(mes, ano);
+    const diasCalendario = [];
+    
+    // Calculate previous month info
+    const mesAnterior = mes === 0 ? 11 : mes - 1;
+    const anoAnterior = mes === 0 ? ano - 1 : ano;
+    const diasMesAnterior = getDiasNoMes(mesAnterior, anoAnterior);
+    
+    // Add days from previous month to complete the first week
+    for (let i = primeiroDia - 1; i >= 0; i--) {
+      diasCalendario.push({
+        dia: diasMesAnterior - i,
+        mes: mesAnterior,
+        ano: anoAnterior,
+        mesAtual: false
+      });
+    }
+    
+    // Add all days from current month
+    for (let dia = 1; dia <= diasNoMes; dia++) {
+      diasCalendario.push({
+        dia: dia,
+        mes: mes,
+        ano: ano,
+        mesAtual: true
+      });
+    }
+    
+    // Calculate total weeks needed (either 5 or 6 to show all days)
+    const totalDiasSoFar = diasCalendario.length;
+    const semanasNecessarias = Math.ceil(totalDiasSoFar / 7);
+    const totalDiasCalendario = semanasNecessarias * 7;
+    const diasRestantes = totalDiasCalendario - totalDiasSoFar;
+    
+    // Add days from next month to complete the weeks
+    const proximoMes = mes === 11 ? 0 : mes + 1;
+    const proximoAno = mes === 11 ? ano + 1 : ano;
+    
+    for (let dia = 1; dia <= diasRestantes; dia++) {
+      diasCalendario.push({
+        dia: dia,
+        mes: proximoMes,
+        ano: proximoAno,
+        mesAtual: false
+      });
+    }
+    
+    return diasCalendario;
+  };
+
   const formatarValor = (valor) => {
     const numero = valor.replace(/\D/g, '');
     const valorFloat = parseFloat(numero) / 100;
@@ -805,9 +858,9 @@ const getDadosGraficoLinha = () => {
     setCalendarioTreino({ mes: novoMes, ano: novoAno });
   };
   
-  const selecionarDiaTreino = (dia) => {
-    const dataFormatada = `${String(dia).padStart(2, '0')}/${String(calendarioTreino.mes + 1).padStart(2, '0')}/${calendarioTreino.ano}`;
-    const treinosDoDia = getTreinosNaData(dia, calendarioTreino.mes, calendarioTreino.ano);
+  const selecionarDiaTreino = (dia, mes = calendarioTreino.mes, ano = calendarioTreino.ano) => {
+    const dataFormatada = `${String(dia).padStart(2, '0')}/${String(mes + 1).padStart(2, '0')}/${ano}`;
+    const treinosDoDia = getTreinosNaData(dia, mes, ano);
     
     setDataSelecionadaTreino(dataFormatada);
     
@@ -1827,6 +1880,9 @@ const getDadosGraficoLinha = () => {
     const diasNoMes = getDiasNoMes(calendarioTreino.mes, calendarioTreino.ano);
     const primeiroDia = getPrimeiroDiaSemana(calendarioTreino.mes, calendarioTreino.ano);
     
+    // Generate 5-week calendar grid
+    const diasCalendario = gerarCalendario5Semanas(calendarioTreino.mes, calendarioTreino.ano);
+    
     // Calcular estatísticas do mês
     const calcularEstatisticasMes = () => {
       const treinosMes = treinos.filter(t => {
@@ -1958,28 +2014,36 @@ const getDadosGraficoLinha = () => {
               </div>
 
               <div className="grid grid-cols-7 gap-1 sm:gap-2">
-                {/* Dias vazios antes do início do mês */}
-                {Array.from({ length: primeiroDia }).map((_, i) => (
-                  <div key={`vazio-${i}`} className="h-14 sm:h-20"></div>
-                ))}
-                
-                {/* Dias do mês */}
-                {Array.from({ length: diasNoMes }).map((_, index) => {
-                  const dia = index + 1;
-                  const dataFormatada = `${String(dia).padStart(2, '0')}/${String(calendarioTreino.mes + 1).padStart(2, '0')}/${calendarioTreino.ano}`;
-                  const treinosDoDia = getTreinosNaData(dia, calendarioTreino.mes, calendarioTreino.ano);
+                {/* 5-week calendar grid (35 days) */}
+                {diasCalendario.map((diaInfo, index) => {
+                  const { dia, mes, ano, mesAtual } = diaInfo;
+                  const dataFormatada = formatarData(dia, mes, ano);
+                  const treinosDoDia = getTreinosNaData(dia, mes, ano);
                   const temTreinos = treinosDoDia.length > 0;
                   const isHoje = dia === new Date().getDate() &&
-                    calendarioTreino.mes === new Date().getMonth() &&
-                    calendarioTreino.ano === new Date().getFullYear();
+                    mes === new Date().getMonth() &&
+                    ano === new Date().getFullYear();
                   const temRecompensa = diaEstaEmSemanaRecompensada(dataFormatada);
 
                   return (
                     <button
-                      key={dia}
+                      key={`${ano}-${mes}-${dia}`}
                       type="button"
-                      onClick={() => selecionarDiaTreino(dia)}
+                      onClick={() => {
+                        // If clicking on a day from another month, navigate to that month first
+                        if (!mesAtual) {
+                          setCalendarioTreino({ mes, ano });
+                        }
+                        // Always use the correct month and year for the clicked day
+                        selecionarDiaTreino(dia, mes, ano);
+                      }}
                       className={`relative h-14 sm:h-20 rounded-xl border-2 transition-all hover:shadow-md flex flex-col items-center justify-center p-1 sm:p-2 overflow-hidden
+                        ${!mesAtual 
+                          ? (modoNoturno 
+                              ? 'opacity-40 border-slate-700' 
+                              : 'opacity-50 border-gray-300')
+                          : ''
+                        }
                         ${isHoje 
                           ? (modoNoturno ? 'border-rose-400 bg-rose-900/30' : 'border-rose-400 bg-rose-50')
                           : (modoNoturno 
@@ -1993,7 +2057,7 @@ const getDadosGraficoLinha = () => {
                           : (modoNoturno ? 'bg-slate-700/50' : 'bg-white')
                         }
                       `}
-                      aria-label={`${dia} de ${meses[calendarioTreino.mes]}${temRecompensa ? ', dia recompensado' : ''}${temTreinos ? `, ${treinosDoDia.length} treino(s)` : ''}`}
+                      aria-label={`${dia} de ${meses[mes]}${temRecompensa ? ', dia recompensado' : ''}${temTreinos ? `, ${treinosDoDia.length} treino(s)` : ''}${!mesAtual ? ' (outro mês)' : ''}`}
                     >
                       {/* Indicador de Recompensa - Only show on days with training */}
                       {temRecompensa && temTreinos && (
@@ -2011,9 +2075,11 @@ const getDadosGraficoLinha = () => {
                       )}
                       
                       <span className={`relative z-10 text-sm sm:text-base font-semibold mb-0.5 ${
-                        isHoje 
-                          ? (modoNoturno ? 'text-rose-400' : 'text-rose-600')
-                          : (modoNoturno ? 'text-slate-200' : 'text-gray-700')
+                        !mesAtual 
+                          ? (modoNoturno ? 'text-slate-500' : 'text-gray-400')
+                          : (isHoje 
+                              ? (modoNoturno ? 'text-rose-400' : 'text-rose-600')
+                              : (modoNoturno ? 'text-slate-200' : 'text-gray-700'))
                       }`}>
                         {dia}
                       </span>
