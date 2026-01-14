@@ -69,6 +69,18 @@ const ControleTransferencias = () => {
   // Estado para mostrar estatísticas como modal
   const [mostrarEstatisticas, setMostrarEstatisticas] = useState(false);
 
+  // Estados para Débitos
+  const [debitos, setDebitos] = useState([]);
+  const [debitoSelecionado, setDebitoSelecionado] = useState(null);
+  const [mostrarFormularioDebito, setMostrarFormularioDebito] = useState(false);
+  const [formularioDebito, setFormularioDebito] = useState({
+    nome: '',
+    valor: ''
+  });
+  const [formularioPagamento, setFormularioPagamento] = useState({
+    valorPagamento: ''
+  });
+
 
   const [formulario, setFormulario] = useState({
     valor: '',
@@ -114,6 +126,7 @@ const ControleTransferencias = () => {
     carregarDados();
     carregarTreinos();
     carregarRecompensas();
+    carregarDebitos();
     
     // Cleanup function to clear timer on component unmount
     return () => {
@@ -196,6 +209,26 @@ const ControleTransferencias = () => {
     } catch (error) {
       console.error('Erro ao carregar recompensas:', error);
       setSemanasRecompensadas([]);
+    }
+  };
+  
+  const carregarDebitos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('debitos')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.log('Tabela debitos não encontrada ou erro (esperado na primeira execução):', error);
+        setDebitos([]);
+        return;
+      }
+
+      setDebitos(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar débitos:', error);
+      setDebitos([]);
     }
   };
 

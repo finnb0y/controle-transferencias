@@ -52,4 +52,28 @@ Apply migrations in this order:
 1. `create_treinos_table.sql`
 2. `add_exercises_to_treinos.sql`
 3. `add_time_fields_to_treinos.sql`
-4. `create_recompensas_table.sql` (NEW - for reward indicators)
+4. `create_recompensas_table.sql` (for reward indicators)
+5. `create_debitos_table.sql` (NEW - for debit management)
+
+### For the debitos table (Debit Management):
+
+1. Access your Supabase dashboard
+2. Go to the SQL Editor
+3. Copy the content of `create_debitos_table.sql`
+4. Paste and execute it in the SQL Editor
+
+This will create the `debitos` table with the following structure:
+
+- `id`: Primary key (auto-increment)
+- `nome`: Name/description of the debit
+- `valor_total`: Total amount of the debit
+- `valor_pago`: Amount already paid (for partial payments)
+- `valor_restante`: Remaining amount to be paid
+- `data_criacao`: Date when the debit was created (format: DD/MM/YYYY)
+- `status`: Status ('ativo' for active, 'pago' for paid)
+- `numero_parcela`: Parcel number (for split debits from partial payments)
+- `debito_original_id`: Reference to the original debit (for partial payment tracking)
+- `created_at`: Timestamp of record creation
+- `updated_at`: Timestamp of last update
+
+**Important:** This table enables debit management alongside regular transfers. Users can create debits, make full or partial payments, and track payment history. Partial payments automatically create new parcel entries.
