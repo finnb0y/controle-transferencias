@@ -1265,6 +1265,22 @@ const getDadosGraficoLinha = () => {
     
     return jaPassou && foiRecompensada;
   };
+
+  // Verificar se a semana já terminou (todos os dias já passaram)
+  const semanaJaTerminou = (semana) => {
+    if (!semana || semana.length === 0) return false;
+    
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    
+    const dataFim = parseDataFormatada(semana[6].dataFormatada);
+    if (!dataFim) return false;
+    
+    dataFim.setHours(23, 59, 59, 999);
+    
+    // Retorna true se a semana já passou completamente
+    return dataFim < hoje;
+  };
   
   // Obter semana baseada em uma data de referência
   const obterSemanaPorData = (dataReferencia) => {
@@ -1391,6 +1407,13 @@ const getDadosGraficoLinha = () => {
   
   const adicionarRecompensa = async () => {
     const semana = obterSemanaAtual();
+    
+    // Verificar se a semana já terminou (não está em progresso)
+    if (!semanaJaTerminou(semana)) {
+      mostrarBarraConfirmacao('Não é possível gerar recompensas para a semana atual ou futura. Aguarde até que a semana termine!', 'warning');
+      return;
+    }
+    
     const diasComTreino = semana.filter(dia => diaEstaMarcado(dia.dataFormatada));
     
     // Issue #2: Check if there are any training days before showing confirmation
@@ -1464,6 +1487,13 @@ const getDadosGraficoLinha = () => {
     
     // Salvar recompensa mesmo sem requisitos mínimos
     const semana = obterSemanaAtual();
+    
+    // Verificar se a semana já terminou (não está em progresso)
+    if (!semanaJaTerminou(semana)) {
+      mostrarBarraConfirmacao('Não é possível gerar recompensas para a semana atual ou futura. Aguarde até que a semana termine!', 'warning');
+      return;
+    }
+    
     const diasComTreino = semana.filter(dia => diaEstaMarcado(dia.dataFormatada));
     
     // Issue #2: Check if there are any training days
@@ -2828,16 +2858,12 @@ const getDadosGraficoLinha = () => {
                       key={`${ano}-${mes}-${dia}`}
                       type="button"
                       onClick={() => {
-                        // Prevent editing paid days
-                        if (diaPago && temTreinos) {
-                          mostrarBarraConfirmacao('Este dia já foi pago e não pode ser editado!', 'warning');
-                          return;
-                        }
                         // If clicking on a day from another month, navigate to that month first
                         if (!mesAtual) {
                           setCalendarioTreino({ mes, ano });
                         }
                         // Always use the correct month and year for the clicked day
+                        // Allow viewing workouts even on paid days, but editing/deleting will be blocked
                         selecionarDiaTreino(dia, mes, ano);
                       }}
                       className={`relative h-14 sm:h-20 rounded-xl border-2 transition-all hover:shadow-md flex flex-col items-center justify-center p-1 sm:p-2 overflow-hidden
@@ -2863,9 +2889,9 @@ const getDadosGraficoLinha = () => {
                               : 'bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50')
                           : !diaPago && !temTreinos ? (modoNoturno ? 'bg-slate-700/50' : 'bg-white') : ''
                         }
-                        ${diaPago && temTreinos ? 'cursor-not-allowed' : 'cursor-pointer'}
+                        cursor-pointer
                       `}
-                      aria-label={`${dia} de ${meses[mes]}${diaPago ? ', dia pago (bloqueado)' : ''}${temRecompensa ? ', dia recompensado' : ''}${temTreinos ? `, ${treinosDoDia.length} treino(s)` : ''}${!mesAtual ? ' (outro mês)' : ''}`}
+                      aria-label={`${dia} de ${meses[mes]}${diaPago ? ', dia pago (bloqueado para edição)' : ''}${temRecompensa ? ', dia recompensado' : ''}${temTreinos ? `, ${treinosDoDia.length} treino(s)` : ''}${!mesAtual ? ' (outro mês)' : ''}`}
                     >
                       {/* Indicador de Recompensa Paga - Prioridade para dias pagos */}
                       {diaPago && temTreinos && (
@@ -3320,6 +3346,11 @@ const getDadosGraficoLinha = () => {
                   <p className={modoNoturno ? 'text-slate-200' : 'text-gray-700'}>
                     • Dias de descanso: <strong>{obterSemanaAtual().length - obterSemanaAtual().filter(dia => diaEstaMarcado(dia.dataFormatada)).length}</strong>
                   </p>
+                  {!semanaJaTerminou(obterSemanaAtual()) && (
+                    <p className={`text-xs mt-2 font-semibold ${modoNoturno ? 'text-blue-400' : 'text-blue-600'}`}>
+                      ⏳ Semana em progresso - aguarde até {obterSemanaAtual()[6].dataFormatada} para gerar recompensas
+                    </p>
+                  )}
                   <p className={`text-xs mt-2 ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
                     💡 Para ganhar recompensa: mínimo <strong>{calcularMinimoTreinos(obterSemanaAtual())}</strong> dias de treino
                     {!verificarSemanaCompleta(obterSemanaAtual()).completa && 
