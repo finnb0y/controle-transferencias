@@ -1188,6 +1188,9 @@ const getDadosGraficoLinha = () => {
     const mes = parseInt(partes[1]) - 1; // Month is 0-indexed
     const ano = parseInt(partes[2]);
     
+    // Validate that parsing was successful
+    if (isNaN(dia) || isNaN(mes) || isNaN(ano)) return null;
+    
     return new Date(ano, mes, dia);
   };
   
@@ -3461,7 +3464,7 @@ const getDadosGraficoLinha = () => {
                 </div>
 
                 <p className={`mb-6 ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
-                  Selecione as semanas que deseja incluir no débito. Cada dia de treino vale R$ 10,00.
+                  Selecione as semanas que deseja incluir no débito. Cada dia de treino vale R$ {VALOR_POR_DIA_TREINO.toFixed(2)}.
                 </p>
 
                 {/* Lista de semanas não pagas */}
