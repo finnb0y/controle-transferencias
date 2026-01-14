@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, DollarSign, X, Download, Filter, PieChart, TrendingUp, Home, Plus, Eye, Dumbbell, Check, Edit2, Save, Award, Moon, Sun, Activity } from 'lucide-react';
+import { Calendar, DollarSign, X, Download, Filter, PieChart, TrendingUp, Home, Plus, Eye, Dumbbell, Check, Edit2, Save, Award, Moon, Sun, Activity, CreditCard, Trash2 } from 'lucide-react';
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { supabase } from './supabaseClient';
 
@@ -1674,7 +1674,7 @@ const getDadosGraficoLinha = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Visualizar Histórico */}
             <button
               onClick={() => setTela('visualizar')}
@@ -1726,7 +1726,430 @@ const getDadosGraficoLinha = () => {
                 </p>
               </div>
             </button>
+            
+            {/* Débitos */}
+            <button
+              onClick={() => setTela('debitos')}
+              className={`rounded-3xl shadow-xl p-12 hover:shadow-2xl transition-all transform hover:scale-105 group ${
+                modoNoturno ? 'bg-slate-700' : 'bg-white'
+              }`}
+            >
+              <div className="flex flex-col items-center gap-6">
+                <div className={`p-8 rounded-full transition-colors ${
+                  modoNoturno 
+                    ? 'bg-orange-900/30 group-hover:bg-orange-600' 
+                    : 'bg-orange-100 group-hover:bg-orange-600'
+                }`}>
+                  <CreditCard className={`transition-colors ${
+                    modoNoturno ? 'text-orange-400 group-hover:text-white' : 'text-orange-600 group-hover:text-white'
+                  }`} size={64} />
+                </div>
+                <h2 className={`text-3xl font-bold ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
+                  Débitos
+                </h2>
+                <p className={`text-center text-lg ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
+                  Gerencie débitos ativos e histórico de pagamentos
+                </p>
+              </div>
+            </button>
           </div>
+        </div>
+        
+        {renderNotificacoes()}
+      </div>
+    );
+  }
+
+  // TELA DE DÉBITOS
+  if (tela === 'debitos') {
+    const debitosAtivos = debitos.filter(d => d.status === 'ativo');
+    const debitosPagos = debitos.filter(d => d.status === 'pago');
+    
+    const adicionarDebito = async () => {
+      if (!formularioDebito.nome || !formularioDebito.valor) {
+        mostrarBarraConfirmacao('Por favor, preencha o nome e o valor do débito!', 'warning');
+        return;
+      }
+
+      try {
+        const valorTotal = parseFloat(formularioDebito.valor.replace(/\./g, '').replace(',', '.'));
+        const dataAtual = new Date();
+        const dataFormatada = `${String(dataAtual.getDate()).padStart(2, '0')}/${String(dataAtual.getMonth() + 1).padStart(2, '0')}/${dataAtual.getFullYear()}`;
+
+        const { error } = await supabase
+          .from('debitos')
+          .insert([{
+            nome: formularioDebito.nome,
+            valor_total: valorTotal,
+            valor_pago: 0,
+            valor_restante: valorTotal,
+            data_criacao: dataFormatada,
+            status: 'ativo'
+          }]);
+
+        if (error) throw error;
+
+        mostrarBarraConfirmacao('Débito adicionado com sucesso!', 'success');
+        setFormularioDebito({ nome: '', valor: '' });
+        setMostrarFormularioDebito(false);
+        await carregarDebitos();
+      } catch (error) {
+        console.error('Erro ao adicionar débito:', error);
+        mostrarBarraConfirmacao('Erro ao adicionar débito. Tente novamente.', 'error');
+      }
+    };
+
+    const pagarDebito = async () => {
+      if (!debitoSelecionado || !formularioPagamento.valorPagamento) {
+        mostrarBarraConfirmacao('Por favor, informe o valor do pagamento!', 'warning');
+        return;
+      }
+
+      try {
+        const valorPagamento = parseFloat(formularioPagamento.valorPagamento.replace(/\./g, '').replace(',', '.'));
+        const novoValorPago = debitoSelecionado.valor_pago + valorPagamento;
+        const novoValorRestante = debitoSelecionado.valor_total - novoValorPago;
+
+        if (valorPagamento > debitoSelecionado.valor_restante) {
+          mostrarBarraConfirmacao('Valor do pagamento não pode exceder o valor restante!', 'error');
+          return;
+        }
+
+        const dataAtual = new Date();
+        const dataFormatada = `${String(dataAtual.getDate()).padStart(2, '0')}/${String(dataAtual.getMonth() + 1).padStart(2, '0')}/${dataAtual.getFullYear()}`;
+
+        // Se pagamento total, marcar como pago
+        if (novoValorRestante === 0) {
+          const { error: updateError } = await supabase
+            .from('debitos')
+            .update({
+              valor_pago: novoValorPago,
+              valor_restante: 0,
+              status: 'pago'
+            })
+            .eq('id', debitoSelecionado.id);
+
+          if (updateError) throw updateError;
+
+          // Adicionar na tabela de transferências
+          const { error: transferenciaError } = await supabase
+            .from('transferencias')
+            .insert([{
+              valor: formularioPagamento.valorPagamento,
+              data: dataFormatada,
+              tipo: 'digital',
+              descricao: `Pagamento: ${debitoSelecionado.nome}`
+            }]);
+
+          if (transferenciaError) throw transferenciaError;
+
+          mostrarBarraConfirmacao('Débito pago completamente!', 'success');
+        } else {
+          // Pagamento parcial - atualizar débito existente e criar nova parcela
+          const { error: updateError } = await supabase
+            .from('debitos')
+            .update({
+              valor_pago: novoValorPago,
+              valor_restante: novoValorRestante
+            })
+            .eq('id', debitoSelecionado.id);
+
+          if (updateError) throw updateError;
+
+          // Adicionar pagamento parcial na tabela de transferências
+          const numeroParcela = (debitoSelecionado.numero_parcela || 0) + 1;
+          const { error: transferenciaError } = await supabase
+            .from('transferencias')
+            .insert([{
+              valor: formularioPagamento.valorPagamento,
+              data: dataFormatada,
+              tipo: 'digital',
+              descricao: `Pagamento parcial ${numeroParcela}: ${debitoSelecionado.nome}`
+            }]);
+
+          if (transferenciaError) throw transferenciaError;
+
+          mostrarBarraConfirmacao(`Pagamento parcial registrado! Restante: R$ ${novoValorRestante.toFixed(2)}`, 'success');
+        }
+
+        setFormularioPagamento({ valorPagamento: '' });
+        setDebitoSelecionado(null);
+        await carregarDebitos();
+        await carregarDados();
+      } catch (error) {
+        console.error('Erro ao pagar débito:', error);
+        mostrarBarraConfirmacao('Erro ao processar pagamento. Tente novamente.', 'error');
+      }
+    };
+
+    const excluirDebito = async (id) => {
+      const confirmado = await mostrarModalConfirmacaoFn('Tem certeza que deseja excluir este débito?');
+      if (!confirmado) return;
+
+      try {
+        const { error } = await supabase
+          .from('debitos')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+
+        mostrarBarraConfirmacao('Débito excluído com sucesso!', 'success');
+        await carregarDebitos();
+      } catch (error) {
+        console.error('Erro ao excluir débito:', error);
+        mostrarBarraConfirmacao('Erro ao excluir débito. Tente novamente.', 'error');
+      }
+    };
+
+    return (
+      <div className={`min-h-screen p-4 ${
+        modoNoturno ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-gradient-to-br from-blue-50 to-indigo-100'
+      }`}>
+        <div className="max-w-6xl mx-auto">
+          <button
+            onClick={() => setTela('transferencias-menu')}
+            className={`mb-6 flex items-center gap-2 px-6 py-3 rounded-full shadow hover:shadow-md transition-all ${
+              modoNoturno ? 'bg-slate-700 text-slate-100' : 'bg-white'
+            }`}
+          >
+            <Home size={20} />
+            Voltar
+          </button>
+
+          {/* Adicionar Débito */}
+          <div className={`rounded-2xl shadow-xl p-6 mb-6 ${modoNoturno ? 'bg-slate-800/90' : 'bg-white'}`}>
+            <h1 className={`text-3xl font-bold mb-6 flex items-center gap-3 ${
+              modoNoturno ? 'text-slate-100' : 'text-gray-800'
+            }`}>
+              <CreditCard className={modoNoturno ? 'text-orange-400' : 'text-orange-600'} size={36} />
+              Gerenciar Débitos
+            </h1>
+
+            {!mostrarFormularioDebito ? (
+              <button
+                onClick={() => setMostrarFormularioDebito(true)}
+                className="w-full bg-orange-600 text-white py-3 rounded-2xl font-bold text-lg hover:bg-orange-700 transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              >
+                <Plus size={24} />
+                Adicionar Novo Débito
+              </button>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className={`block text-sm font-semibold mb-2 ${
+                      modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                    }`}>
+                      Nome do Débito
+                    </label>
+                    <input
+                      type="text"
+                      value={formularioDebito.nome}
+                      onChange={(e) => setFormularioDebito({ ...formularioDebito, nome: e.target.value })}
+                      placeholder="Ex: Cartão de crédito, Empréstimo..."
+                      className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-lg ${
+                        modoNoturno 
+                          ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-400 focus:border-orange-400' 
+                          : 'border-gray-300 focus:border-orange-500'
+                      }`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={`block text-sm font-semibold mb-2 ${
+                      modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                    }`}>
+                      Valor Total (R$)
+                    </label>
+                    <input
+                      type="text"
+                      value={formularioDebito.valor}
+                      onChange={(e) => setFormularioDebito({ ...formularioDebito, valor: formatarValor(e.target.value) })}
+                      placeholder="0,00"
+                      className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-lg ${
+                        modoNoturno 
+                          ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-400 focus:border-orange-400' 
+                          : 'border-gray-300 focus:border-orange-500'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={adicionarDebito}
+                    className="flex-1 bg-orange-600 text-white py-3 rounded-2xl font-bold text-lg hover:bg-orange-700 transition-colors shadow-lg hover:shadow-xl"
+                  >
+                    Adicionar Débito
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMostrarFormularioDebito(false);
+                      setFormularioDebito({ nome: '', valor: '' });
+                    }}
+                    className={`px-6 py-3 border-2 rounded-2xl font-bold text-lg transition-colors ${
+                      modoNoturno 
+                        ? 'border-slate-600 text-slate-200 hover:bg-slate-700' 
+                        : 'border-gray-300 hover:bg-gray-100'
+                    }`}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Débitos Ativos */}
+          <div className={`rounded-2xl shadow-xl p-6 mb-6 ${modoNoturno ? 'bg-slate-800/90' : 'bg-white'}`}>
+            <h2 className={`text-2xl font-bold mb-6 ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
+              Débitos Ativos ({debitosAtivos.length})
+            </h2>
+
+            {debitosAtivos.length === 0 ? (
+              <p className={`text-center py-8 ${modoNoturno ? 'text-slate-400' : 'text-gray-500'}`}>
+                Nenhum débito ativo no momento.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {debitosAtivos.map((debito) => (
+                  <div
+                    key={debito.id}
+                    className={`border-2 rounded-2xl p-4 ${
+                      modoNoturno ? 'border-slate-600 bg-slate-700/50' : 'border-gray-200'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className={`text-xl font-bold ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
+                          {debito.nome}
+                        </h3>
+                        <p className={`text-sm ${modoNoturno ? 'text-slate-400' : 'text-gray-500'}`}>
+                          Criado em: {debito.data_criacao}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => excluirDebito(debito.id)}
+                        className={`p-2 rounded-full transition-colors ${
+                          modoNoturno 
+                            ? 'text-red-400 hover:text-red-300 hover:bg-red-900/30' 
+                            : 'text-red-600 hover:text-red-800 hover:bg-red-50'
+                        }`}
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                      <div>
+                        <p className={`text-sm ${modoNoturno ? 'text-slate-400' : 'text-gray-600'}`}>Valor Total</p>
+                        <p className={`text-lg font-bold ${modoNoturno ? 'text-orange-400' : 'text-orange-600'}`}>
+                          R$ {debito.valor_total.toFixed(2)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className={`text-sm ${modoNoturno ? 'text-slate-400' : 'text-gray-600'}`}>Valor Pago</p>
+                        <p className={`text-lg font-bold ${modoNoturno ? 'text-green-400' : 'text-green-600'}`}>
+                          R$ {debito.valor_pago.toFixed(2)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className={`text-sm ${modoNoturno ? 'text-slate-400' : 'text-gray-600'}`}>Valor Restante</p>
+                        <p className={`text-lg font-bold ${modoNoturno ? 'text-red-400' : 'text-red-600'}`}>
+                          R$ {debito.valor_restante.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {debitoSelecionado?.id === debito.id ? (
+                      <div className="space-y-3 border-t-2 pt-4 ${modoNoturno ? 'border-slate-600' : 'border-gray-200'}">
+                        <label className={`block text-sm font-semibold mb-2 ${
+                          modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                        }`}>
+                          Valor do Pagamento (máximo: R$ {debito.valor_restante.toFixed(2)})
+                        </label>
+                        <input
+                          type="text"
+                          value={formularioPagamento.valorPagamento}
+                          onChange={(e) => setFormularioPagamento({ valorPagamento: formatarValor(e.target.value) })}
+                          placeholder="0,00"
+                          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-lg ${
+                            modoNoturno 
+                              ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-400 focus:border-green-400' 
+                              : 'border-gray-300 focus:border-green-500'
+                          }`}
+                        />
+                        <div className="flex gap-3">
+                          <button
+                            onClick={pagarDebito}
+                            className="flex-1 bg-green-600 text-white py-3 rounded-2xl font-bold text-lg hover:bg-green-700 transition-colors"
+                          >
+                            Confirmar Pagamento
+                          </button>
+                          <button
+                            onClick={() => {
+                              setDebitoSelecionado(null);
+                              setFormularioPagamento({ valorPagamento: '' });
+                            }}
+                            className={`px-6 py-3 border-2 rounded-2xl font-bold text-lg transition-colors ${
+                              modoNoturno 
+                                ? 'border-slate-600 text-slate-200 hover:bg-slate-700' 
+                                : 'border-gray-300 hover:bg-gray-100'
+                            }`}
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setDebitoSelecionado(debito)}
+                        className="w-full bg-blue-600 text-white py-3 rounded-2xl font-bold hover:bg-blue-700 transition-colors"
+                      >
+                        Pagar Débito
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Histórico de Débitos Pagos */}
+          {debitosPagos.length > 0 && (
+            <div className={`rounded-2xl shadow-xl p-6 ${modoNoturno ? 'bg-slate-800/90' : 'bg-white'}`}>
+              <h2 className={`text-2xl font-bold mb-6 ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
+                Histórico de Débitos Pagos ({debitosPagos.length})
+              </h2>
+              <div className="space-y-3">
+                {debitosPagos.map((debito) => (
+                  <div
+                    key={debito.id}
+                    className={`border-2 rounded-xl p-4 ${
+                      modoNoturno ? 'border-green-700 bg-green-900/20' : 'border-green-200 bg-green-50'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className={`font-bold ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
+                          {debito.nome}
+                        </h3>
+                        <p className={`text-sm ${modoNoturno ? 'text-slate-400' : 'text-gray-600'}`}>
+                          Criado: {debito.data_criacao} | Pago: R$ {debito.valor_total.toFixed(2)}
+                        </p>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                        modoNoturno ? 'bg-green-900 text-green-300' : 'bg-green-200 text-green-800'
+                      }`}>
+                        PAGO
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         
         {renderNotificacoes()}
