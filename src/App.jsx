@@ -1605,10 +1605,9 @@ const getDadosGraficoLinha = () => {
     try {
       // Ordenar semanas por data de início
       const semanasOrdenadas = [...semanasParaDebito].sort((a, b) => {
-        const partesA = a.data_inicio_semana.split('/');
-        const partesB = b.data_inicio_semana.split('/');
-        const dataA = new Date(parseInt(partesA[2]), parseInt(partesA[1]) - 1, parseInt(partesA[0]));
-        const dataB = new Date(parseInt(partesB[2]), parseInt(partesB[1]) - 1, parseInt(partesB[0]));
+        const dataA = parseDataFormatada(a.data_inicio_semana);
+        const dataB = parseDataFormatada(b.data_inicio_semana);
+        if (!dataA || !dataB) return 0;
         return dataA - dataB;
       });
       
@@ -3478,11 +3477,10 @@ const getDadosGraficoLinha = () => {
                     semanasRecompensadas
                       .filter(s => !s.pago)
                       .sort((a, b) => {
-                        const partesA = a.data_inicio_semana.split('/');
-                        const partesB = b.data_inicio_semana.split('/');
-                        const dataA = new Date(parseInt(partesA[2]), parseInt(partesA[1]) - 1, parseInt(partesA[0]));
-                        const dataB = new Date(parseInt(partesB[2]), parseInt(partesB[1]) - 1, parseInt(partesB[0]));
-                        return dataB - dataA;
+                        const dataA = parseDataFormatada(a.data_inicio_semana);
+                        const dataB = parseDataFormatada(b.data_inicio_semana);
+                        if (!dataA || !dataB) return 0;
+                        return dataB - dataA; // Mais recente primeiro
                       })
                       .map((semana) => {
                         const selecionada = semanasParaDebito.some(s => s.id === semana.id);
@@ -3507,7 +3505,7 @@ const getDadosGraficoLinha = () => {
                                   Semana: {semana.data_inicio_semana} - {semana.data_fim_semana}
                                 </p>
                                 <p className={`text-sm ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
-                                  {semana.dias_treino} dia(s) de treino • R$ {(semana.dias_treino * 10).toFixed(2)}
+                                  {semana.dias_treino} dia(s) de treino • R$ {(semana.dias_treino * VALOR_POR_DIA_TREINO).toFixed(2)}
                                 </p>
                               </div>
                               {selecionada && (
@@ -3537,7 +3535,7 @@ const getDadosGraficoLinha = () => {
                       • Total de dias de treino: <strong>{semanasParaDebito.reduce((acc, s) => acc + s.dias_treino, 0)}</strong>
                     </p>
                     <p className={`text-lg font-bold mt-2 ${modoNoturno ? 'text-green-400' : 'text-green-600'}`}>
-                      • Valor total: R$ {(semanasParaDebito.reduce((acc, s) => acc + s.dias_treino, 0) * 10).toFixed(2)}
+                      • Valor total: R$ {(semanasParaDebito.reduce((acc, s) => acc + s.dias_treino, 0) * VALOR_POR_DIA_TREINO).toFixed(2)}
                     </p>
                   </div>
                 )}
