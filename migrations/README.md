@@ -53,7 +53,8 @@ Apply migrations in this order:
 2. `add_exercises_to_treinos.sql`
 3. `add_time_fields_to_treinos.sql`
 4. `create_recompensas_table.sql` (for reward indicators)
-5. `create_debitos_table.sql` (NEW - for debit management)
+5. `create_debitos_table.sql` (for debit management)
+6. `add_debito_id_to_recompensas.sql` (NEW - links rewards to debits for payment tracking)
 
 ### For the debitos table (Debit Management):
 
@@ -77,3 +78,22 @@ This will create the `debitos` table with the following structure:
 - `updated_at`: Timestamp of last update
 
 **Important:** This table enables debit management alongside regular transfers. Users can create debits, make full or partial payments, and track payment history. Partial payments automatically create new parcel entries.
+
+### For linking rewards to debits (Payment Tracking):
+
+1. Access your Supabase dashboard
+2. Go to the SQL Editor
+3. Copy the content of `add_debito_id_to_recompensas.sql`
+4. Paste and execute it in the SQL Editor
+
+This migration adds the following columns to the `recompensas` table:
+
+- `debito_id`: Reference to the debit entry that pays for this reward (nullable)
+- `pago`: Boolean flag indicating if the reward has been monetarily compensated
+
+**Important:** This migration enables the complete reward payment workflow:
+- Users can generate debits from completed training weeks (10 reais per training day)
+- Multiple weeks can be combined into a single debit
+- When the debit is paid, all associated rewards are automatically marked as paid
+- Paid training days are highlighted in green and locked from further editing
+- The system preserves data integrity by preventing modifications to compensated records

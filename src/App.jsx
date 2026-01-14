@@ -4,6 +4,7 @@ import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, LineChart, Lin
 import { supabase } from './supabaseClient';
 
 const CONFIRMATION_TIMEOUT = 4000; // 4 seconds
+const VALOR_POR_DIA_TREINO = 10; // Reais por dia de treino
 
 const ControleTransferencias = () => {
   const [tela, setTela] = useState('inicial');
@@ -65,6 +66,8 @@ const ControleTransferencias = () => {
   const [mensagemModalInsuficiente, setMensagemModalInsuficiente] = useState('');
   const [mostrarSeletorData, setMostrarSeletorData] = useState(false);
   const [semanasRecompensadas, setSemanasRecompensadas] = useState([]); // Lista de semanas que receberam recompensas
+  const [mostrarModalGerarDebito, setMostrarModalGerarDebito] = useState(false); // Modal para gerar débito
+  const [semanasParaDebito, setSemanasParaDebito] = useState([]); // Semanas selecionadas para débito
   
   // Estado para mostrar estatísticas como modal
   const [mostrarEstatisticas, setMostrarEstatisticas] = useState(false);
@@ -194,7 +197,7 @@ const ControleTransferencias = () => {
     try {
       const { data, error } = await supabase
         .from('recompensas')
-        .select('data_inicio_semana, data_fim_semana, dias_treino, concedido_em')
+        .select('id, data_inicio_semana, data_fim_semana, dias_treino, concedido_em, pago, debito_id')
         .order('data_inicio_semana', { ascending: false });
 
       if (error) {
@@ -983,6 +986,12 @@ const getDadosGraficoLinha = () => {
   };
   
   const editarTreino = (treino) => {
+    // Verificar se o dia está pago
+    if (diaEstaEmSemanaPaga(treino.data)) {
+      mostrarBarraConfirmacao('Este treino já foi pago e não pode ser editado!', 'warning');
+      return;
+    }
+    
     setTreinoEditando(treino);
     setDataSelecionadaTreino(treino.data);
     setFormularioTreino({
@@ -1057,6 +1066,13 @@ const getDadosGraficoLinha = () => {
   };
   
   const excluirTreino = async (id) => {
+    // Buscar o treino para verificar a data
+    const treino = treinos.find(t => t.id === id);
+    if (treino && diaEstaEmSemanaPaga(treino.data)) {
+      mostrarBarraConfirmacao('Este treino já foi pago e não pode ser excluído!', 'warning');
+      return;
+    }
+    
     const confirmado = await mostrarModalConfirmacaoFn('Tem certeza que deseja excluir este treino?');
     if (!confirmado) {
       return;
@@ -1163,35 +1179,54 @@ const getDadosGraficoLinha = () => {
   
   // Funções do Sistema de Recompensas
   
+  // Helper function to parse date in DD/MM/YYYY format
+  const parseDataFormatada = (dataFormatada) => {
+    const partes = dataFormatada.split('/');
+    if (partes.length !== 3) return null;
+    
+    const dia = parseInt(partes[0]);
+    const mes = parseInt(partes[1]) - 1; // Month is 0-indexed
+    const ano = parseInt(partes[2]);
+    
+    // Validate that parsing was successful
+    if (isNaN(dia) || isNaN(mes) || isNaN(ano)) return null;
+    
+    return new Date(ano, mes, dia);
+  };
+  
   // Verificar se uma data específica faz parte de uma semana recompensada
   const diaEstaEmSemanaRecompensada = (dataFormatada) => {
     if (semanasRecompensadas.length === 0) return false;
     
-    // Converter a data formatada para objeto Date
-    const partes = dataFormatada.split('/');
-    if (partes.length !== 3) return false;
-    
-    const dia = parseInt(partes[0]);
-    const mes = parseInt(partes[1]) - 1; // Mês em JS é 0-indexed
-    const ano = parseInt(partes[2]);
-    const dataAlvo = new Date(ano, mes, dia);
+    const dataAlvo = parseDataFormatada(dataFormatada);
+    if (!dataAlvo) return false;
     
     // Verificar se a data está dentro de alguma semana recompensada
     return semanasRecompensadas.some(semana => {
-      const partesInicio = semana.data_inicio_semana.split('/');
-      const partesFim = semana.data_fim_semana.split('/');
+      const dataInicio = parseDataFormatada(semana.data_inicio_semana);
+      const dataFim = parseDataFormatada(semana.data_fim_semana);
       
-      const dataInicio = new Date(
-        parseInt(partesInicio[2]),
-        parseInt(partesInicio[1]) - 1,
-        parseInt(partesInicio[0])
-      );
+      if (!dataInicio || !dataFim) return false;
       
-      const dataFim = new Date(
-        parseInt(partesFim[2]),
-        parseInt(partesFim[1]) - 1,
-        parseInt(partesFim[0])
-      );
+      return dataAlvo >= dataInicio && dataAlvo <= dataFim;
+    });
+  };
+
+  // Verificar se um dia específico está em uma semana paga
+  const diaEstaEmSemanaPaga = (dataFormatada) => {
+    if (semanasRecompensadas.length === 0) return false;
+    
+    const dataAlvo = parseDataFormatada(dataFormatada);
+    if (!dataAlvo) return false;
+    
+    // Verificar se a data está dentro de alguma semana paga
+    return semanasRecompensadas.some(semana => {
+      if (!semana.pago) return false; // Só considerar semanas pagas
+      
+      const dataInicio = parseDataFormatada(semana.data_inicio_semana);
+      const dataFim = parseDataFormatada(semana.data_fim_semana);
+      
+      if (!dataInicio || !dataFim) return false;
       
       return dataAlvo >= dataInicio && dataAlvo <= dataFim;
     });
@@ -1209,6 +1244,21 @@ const getDadosGraficoLinha = () => {
       recompensa.data_inicio_semana === dataInicioSemana && 
       recompensa.data_fim_semana === dataFimSemana
     );
+  };
+  
+  // Verificar se a semana está finalizada (antes da data atual)
+  const semanaEstaFinalizada = (semana) => {
+    if (!semana || semana.length === 0) return false;
+    
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    
+    const dataFim = parseDataFormatada(semana[6].dataFormatada);
+    if (!dataFim) return false;
+    
+    dataFim.setHours(23, 59, 59, 999);
+    
+    return dataFim < hoje;
   };
   
   // Obter semana baseada em uma data de referência
@@ -1287,6 +1337,12 @@ const getDadosGraficoLinha = () => {
   
   // Toggle manual de marcação de dia
   const toggleDiaMarcado = (dataFormatada) => {
+    // Verificar se o dia está em uma semana paga (bloqueada)
+    if (diaEstaEmSemanaPaga(dataFormatada)) {
+      mostrarBarraConfirmacao('Este dia já foi pago e não pode ser alterado!', 'warning');
+      return;
+    }
+    
     const estadoAtual = diaEstaMarcado(dataFormatada);
     setDiasMarcadosRecompensa({
       ...diasMarcadosRecompensa,
@@ -1504,6 +1560,122 @@ const getDadosGraficoLinha = () => {
     setDiasMarcadosRecompensa({});
     setTentativasRecompensa(0);
     setMostrarSeletorData(false);
+  };
+  
+  // Abrir modal para gerar débito
+  const abrirModalGerarDebito = () => {
+    const semana = obterSemanaAtual();
+    const semanaExistente = verificarSemanaJaRecompensada(semana);
+    
+    if (!semanaExistente) {
+      mostrarBarraConfirmacao('Esta semana ainda não foi recompensada!', 'warning');
+      return;
+    }
+    
+    if (semanaExistente.pago) {
+      mostrarBarraConfirmacao('Esta semana já foi paga!', 'info');
+      return;
+    }
+    
+    // Inicializar com a semana atual selecionada
+    setSemanasParaDebito([semanaExistente]);
+    setMostrarModalGerarDebito(true);
+  };
+  
+  // Toggle seleção de semana para débito
+  const toggleSemanaSelecionadaDebito = (recompensa) => {
+    if (recompensa.pago) {
+      mostrarBarraConfirmacao('Esta semana já foi paga!', 'warning');
+      return;
+    }
+    
+    const jaEstaInclusa = semanasParaDebito.some(s => s.id === recompensa.id);
+    
+    if (jaEstaInclusa) {
+      setSemanasParaDebito(semanasParaDebito.filter(s => s.id !== recompensa.id));
+    } else {
+      setSemanasParaDebito([...semanasParaDebito, recompensa]);
+    }
+  };
+  
+  // Gerar débito a partir das semanas selecionadas
+  const gerarDebitoRecompensas = async () => {
+    if (semanasParaDebito.length === 0) {
+      mostrarBarraConfirmacao('Selecione pelo menos uma semana para gerar o débito!', 'warning');
+      return;
+    }
+    
+    try {
+      // Ordenar semanas por data de início
+      const semanasOrdenadas = [...semanasParaDebito].sort((a, b) => {
+        const dataA = parseDataFormatada(a.data_inicio_semana);
+        const dataB = parseDataFormatada(b.data_inicio_semana);
+        if (!dataA || !dataB) return 0;
+        return dataA - dataB;
+      });
+      
+      // Calcular total de dias de treino
+      const totalDiasTreino = semanasOrdenadas.reduce((acc, s) => acc + s.dias_treino, 0);
+      
+      // Valor: VALOR_POR_DIA_TREINO reais por dia de treino
+      const valorTotal = totalDiasTreino * VALOR_POR_DIA_TREINO;
+      
+      // Formato da descrição: "Semanas de Treino DD/MM/YY a DD/MM/YY"
+      const primeiraData = semanasOrdenadas[0].data_inicio_semana;
+      const ultimaData = semanasOrdenadas[semanasOrdenadas.length - 1].data_fim_semana;
+      const descricao = `Semanas de Treino ${primeiraData} a ${ultimaData}`;
+      
+      const dataAtual = new Date();
+      const dataFormatada = `${String(dataAtual.getDate()).padStart(2, '0')}/${String(dataAtual.getMonth() + 1).padStart(2, '0')}/${dataAtual.getFullYear()}`;
+      
+      // Criar débito
+      const { data: debitoData, error: debitoError } = await supabase
+        .from('debitos')
+        .insert([{
+          nome: descricao,
+          valor_total: valorTotal,
+          valor_pago: 0,
+          valor_restante: valorTotal,
+          data_criacao: dataFormatada,
+          status: 'ativo'
+        }])
+        .select();
+      
+      if (debitoError) throw debitoError;
+      
+      const debitoId = debitoData[0].id;
+      
+      // Atualizar recompensas com o debito_id (tentar atualizar todas)
+      const updatePromises = semanasOrdenadas.map(semana => 
+        supabase
+          .from('recompensas')
+          .update({ debito_id: debitoId })
+          .eq('id', semana.id)
+      );
+      
+      const results = await Promise.allSettled(updatePromises);
+      
+      // Verificar se alguma atualização falhou
+      const falhas = results.filter(r => r.status === 'rejected');
+      if (falhas.length > 0) {
+        console.error('Algumas recompensas não puderam ser vinculadas ao débito:', falhas);
+        mostrarBarraConfirmacao(`Débito criado, mas ${falhas.length} semana(s) não puderam ser vinculadas. Tente novamente mais tarde.`, 'warning');
+      } else {
+        mostrarBarraConfirmacao(`Débito criado com sucesso! Valor: R$ ${valorTotal.toFixed(2)} (${totalDiasTreino} dias de treino)`, 'success');
+      }
+      
+      // Recarregar dados
+      await carregarDebitos();
+      await carregarRecompensas();
+      
+      // Fechar modal
+      setMostrarModalGerarDebito(false);
+      setSemanasParaDebito([]);
+      setMostrarRecompensas(false);
+    } catch (error) {
+      console.error('Erro ao gerar débito:', error);
+      mostrarBarraConfirmacao('Erro ao gerar débito. Tente novamente.', 'error');
+    }
   };
   
   // Renderiza componentes de notificação e confirmação
@@ -1903,6 +2075,16 @@ const getDadosGraficoLinha = () => {
 
           if (updateError) throw updateError;
 
+          // Marcar recompensas associadas como pagas
+          const { error: recompensasError } = await supabase
+            .from('recompensas')
+            .update({ pago: true })
+            .eq('debito_id', debitoSelecionado.id);
+
+          if (recompensasError) {
+            console.error('Erro ao marcar recompensas como pagas:', recompensasError);
+          }
+
           // Adicionar na tabela de transferências
           const { error: transferenciaError } = await supabase
             .from('transferencias')
@@ -1914,6 +2096,9 @@ const getDadosGraficoLinha = () => {
             }]);
 
           if (transferenciaError) throw transferenciaError;
+
+          // Recarregar recompensas para atualizar a interface
+          await carregarRecompensas();
 
           mostrarBarraConfirmacao('Débito pago completamente!', 'success');
         } else {
@@ -2663,12 +2848,18 @@ const getDadosGraficoLinha = () => {
                     mes === new Date().getMonth() &&
                     ano === new Date().getFullYear();
                   const temRecompensa = diaEstaEmSemanaRecompensada(dataFormatada);
+                  const diaPago = diaEstaEmSemanaPaga(dataFormatada);
 
                   return (
                     <button
                       key={`${ano}-${mes}-${dia}`}
                       type="button"
                       onClick={() => {
+                        // Prevent editing paid days
+                        if (diaPago && temTreinos) {
+                          mostrarBarraConfirmacao('Este dia já foi pago e não pode ser editado!', 'warning');
+                          return;
+                        }
                         // If clicking on a day from another month, navigate to that month first
                         if (!mesAtual) {
                           setCalendarioTreino({ mes, ano });
@@ -2683,23 +2874,42 @@ const getDadosGraficoLinha = () => {
                               : 'opacity-50 border-gray-300')
                           : ''
                         }
-                        ${isHoje 
-                          ? (modoNoturno ? 'border-rose-400 bg-rose-900/30' : 'border-rose-400 bg-rose-50')
-                          : (modoNoturno 
-                              ? 'border-slate-600 hover:border-rose-400' 
-                              : 'border-gray-200 hover:border-rose-300')
+                        ${diaPago && temTreinos
+                          ? (modoNoturno 
+                              ? 'border-green-500 bg-gradient-to-br from-green-900/50 to-emerald-900/50' 
+                              : 'border-green-400 bg-gradient-to-br from-green-100 to-emerald-100')
+                          : isHoje 
+                            ? (modoNoturno ? 'border-rose-400 bg-rose-900/30' : 'border-rose-400 bg-rose-50')
+                            : (modoNoturno 
+                                ? 'border-slate-600 hover:border-rose-400' 
+                                : 'border-gray-200 hover:border-rose-300')
                         }
-                        ${temTreinos 
+                        ${!diaPago && temTreinos 
                           ? (modoNoturno 
                               ? 'bg-gradient-to-br from-purple-900/30 via-pink-900/30 to-rose-900/30' 
                               : 'bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50')
-                          : (modoNoturno ? 'bg-slate-700/50' : 'bg-white')
+                          : !diaPago && !temTreinos ? (modoNoturno ? 'bg-slate-700/50' : 'bg-white') : ''
                         }
+                        ${diaPago && temTreinos ? 'cursor-not-allowed' : 'cursor-pointer'}
                       `}
-                      aria-label={`${dia} de ${meses[mes]}${temRecompensa ? ', dia recompensado' : ''}${temTreinos ? `, ${treinosDoDia.length} treino(s)` : ''}${!mesAtual ? ' (outro mês)' : ''}`}
+                      aria-label={`${dia} de ${meses[mes]}${diaPago ? ', dia pago (bloqueado)' : ''}${temRecompensa ? ', dia recompensado' : ''}${temTreinos ? `, ${treinosDoDia.length} treino(s)` : ''}${!mesAtual ? ' (outro mês)' : ''}`}
                     >
-                      {/* Indicador de Recompensa - Only show on days with training */}
-                      {temRecompensa && temTreinos && (
+                      {/* Indicador de Recompensa Paga - Prioridade para dias pagos */}
+                      {diaPago && temTreinos && (
+                        <div 
+                          className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 z-10"
+                          title="Dia pago (bloqueado)"
+                          aria-hidden="true"
+                        >
+                          <Check 
+                            className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 drop-shadow-sm font-bold" 
+                            strokeWidth={3}
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Indicador de Recompensa - Only show on days with training that are not paid */}
+                      {!diaPago && temRecompensa && temTreinos && (
                         <div 
                           className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 z-10"
                           title="Dia recompensado"
@@ -3050,27 +3260,33 @@ const getDadosGraficoLinha = () => {
                     Treinos da Semana Selecionada
                   </h3>
                   <p className={`text-xs mb-2 ${modoNoturno ? 'text-slate-400' : 'text-gray-600'}`}>
-                    💡 Clique nos dias para marcar/desmarcar manualmente
+                    💡 Clique nos dias para marcar/desmarcar manualmente {verificarSemanaJaRecompensada(obterSemanaAtual())?.pago && '(dias pagos estão bloqueados)'}
                   </p>
                   {obterSemanaAtual().map((dia, index) => {
                     const estaMarcado = diaEstaMarcado(dia.dataFormatada);
                     const treinosDoDia = treinos.filter(t => t.data === dia.dataFormatada);
                     const temTreinoReal = treinosDoDia.length > 0;
                     const marcadoManualmente = Object.prototype.hasOwnProperty.call(diasMarcadosRecompensa, dia.dataFormatada);
+                    const diaPago = diaEstaEmSemanaPaga(dia.dataFormatada);
                     
                     return (
                       <button
                         key={index}
                         type="button"
                         onClick={() => toggleDiaMarcado(dia.dataFormatada)}
-                        className={`w-full p-4 rounded-xl border-2 transition-all cursor-pointer hover:shadow-md ${
-                          estaMarcado 
-                            ? modoNoturno 
-                              ? 'bg-gradient-to-br from-green-900/50 to-emerald-900/50 border-green-600' 
-                              : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300' 
-                            : modoNoturno 
-                              ? 'bg-slate-700/50 border-slate-600 hover:border-slate-500' 
-                              : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                        disabled={diaPago}
+                        className={`w-full p-4 rounded-xl border-2 transition-all hover:shadow-md ${
+                          diaPago
+                            ? modoNoturno
+                              ? 'bg-gradient-to-br from-green-900/70 to-emerald-900/70 border-green-500 cursor-not-allowed'
+                              : 'bg-gradient-to-br from-green-200 to-emerald-200 border-green-400 cursor-not-allowed'
+                            : estaMarcado 
+                              ? modoNoturno 
+                                ? 'bg-gradient-to-br from-green-900/50 to-emerald-900/50 border-green-600 cursor-pointer' 
+                                : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300 cursor-pointer' 
+                              : modoNoturno 
+                                ? 'bg-slate-700/50 border-slate-600 hover:border-slate-500 cursor-pointer' 
+                                : 'bg-gray-50 border-gray-200 hover:border-gray-300 cursor-pointer'
                         }`}
                       >
                         <div className="flex justify-between items-center">
@@ -3082,7 +3298,7 @@ const getDadosGraficoLinha = () => {
                                   ? 'bg-slate-600 text-slate-300' 
                                   : 'bg-gray-300 text-gray-600'
                             }`}>
-                              {estaMarcado ? <Check size={20} /> : dia.diaSemana}
+                              {estaMarcado ? <Check className="w-5 h-5" strokeWidth={2} /> : dia.diaSemana}
                             </div>
                             <div className="text-left">
                               <p className={`font-bold ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
@@ -3093,7 +3309,12 @@ const getDadosGraficoLinha = () => {
                                   {treinosDoDia.length} treino(s): {treinosDoDia.map(t => t.subcategoria).join(', ')}
                                 </p>
                               )}
-                              {marcadoManualmente && !temTreinoReal && estaMarcado && (
+                              {diaPago && (
+                                <p className={`text-xs font-semibold ${modoNoturno ? 'text-green-400' : 'text-green-600'}`}>
+                                  🔒 Pago (bloqueado)
+                                </p>
+                              )}
+                              {!diaPago && marcadoManualmente && !temTreinoReal && estaMarcado && (
                                 <p className={`text-xs font-semibold ${modoNoturno ? 'text-blue-400' : 'text-blue-600'}`}>
                                   ✓ Marcado manualmente
                                 </p>
@@ -3134,13 +3355,29 @@ const getDadosGraficoLinha = () => {
                   </p>
                 </div>
                 
-                <button
-                  onClick={adicionarRecompensa}
-                  className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white py-4 rounded-2xl font-bold text-lg hover:from-amber-600 hover:to-yellow-600 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-                >
-                  <Award size={24} />
-                  {verificarSemanaJaRecompensada(obterSemanaAtual()) ? 'Atualizar Semana' : 'Reivindicar Recompensa'}
-                </button>
+                {/* Botões de ação */}
+                <div className="space-y-3">
+                  <button
+                    onClick={adicionarRecompensa}
+                    className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white py-4 rounded-2xl font-bold text-lg hover:from-amber-600 hover:to-yellow-600 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                  >
+                    <Award size={24} />
+                    {verificarSemanaJaRecompensada(obterSemanaAtual()) ? 'Atualizar Semana' : 'Reivindicar Recompensa'}
+                  </button>
+                  
+                  {/* Botão Gerar Débito - Apenas para semanas finalizadas e recompensadas mas não pagas */}
+                  {semanaEstaFinalizada(obterSemanaAtual()) && 
+                   verificarSemanaJaRecompensada(obterSemanaAtual()) && 
+                   !verificarSemanaJaRecompensada(obterSemanaAtual()).pago && (
+                    <button
+                      onClick={abrirModalGerarDebito}
+                      className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-4 rounded-2xl font-bold text-lg hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                    >
+                      <CreditCard size={24} />
+                      Gerar Débito
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -3195,6 +3432,143 @@ const getDadosGraficoLinha = () => {
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Modal Gerar Débito - Seleção de Semanas */}
+          {mostrarModalGerarDebito && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+              <div className={`rounded-3xl shadow-2xl p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto ${
+                modoNoturno ? 'bg-slate-800' : 'bg-white'
+              }`}>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className={`text-2xl font-bold flex items-center gap-2 ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
+                    <CreditCard className={modoNoturno ? 'text-green-400' : 'text-green-600'} size={32} />
+                    Gerar Débito de Treino
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setMostrarModalGerarDebito(false);
+                      setSemanasParaDebito([]);
+                    }}
+                    className={`p-2 rounded-full transition-colors ${
+                      modoNoturno 
+                        ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-700' 
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+
+                <p className={`mb-6 ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
+                  Selecione as semanas que deseja incluir no débito. Cada dia de treino vale R$ {VALOR_POR_DIA_TREINO},00.
+                </p>
+
+                {/* Lista de semanas não pagas */}
+                <div className="space-y-3 mb-6">
+                  <h4 className={`text-lg font-bold ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
+                    Semanas Disponíveis
+                  </h4>
+                  {semanasRecompensadas.filter(s => !s.pago).length === 0 ? (
+                    <p className={`text-center py-8 ${modoNoturno ? 'text-slate-400' : 'text-gray-500'}`}>
+                      Nenhuma semana disponível para gerar débito.
+                    </p>
+                  ) : (
+                    semanasRecompensadas
+                      .filter(s => !s.pago)
+                      .sort((a, b) => {
+                        const dataA = parseDataFormatada(a.data_inicio_semana);
+                        const dataB = parseDataFormatada(b.data_inicio_semana);
+                        if (!dataA || !dataB) return 0;
+                        return dataB - dataA; // Mais recente primeiro
+                      })
+                      .map((semana) => {
+                        const selecionada = semanasParaDebito.some(s => s.id === semana.id);
+                        return (
+                          <button
+                            key={semana.id}
+                            type="button"
+                            onClick={() => toggleSemanaSelecionadaDebito(semana)}
+                            className={`w-full p-4 rounded-xl border-2 transition-all ${
+                              selecionada
+                                ? modoNoturno
+                                  ? 'bg-green-900/50 border-green-600'
+                                  : 'bg-green-50 border-green-300'
+                                : modoNoturno
+                                  ? 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
+                                  : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <div className="flex justify-between items-center">
+                              <div className="text-left">
+                                <p className={`font-bold ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
+                                  Semana: {semana.data_inicio_semana} - {semana.data_fim_semana}
+                                </p>
+                                <p className={`text-sm ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
+                                  {semana.dias_treino} dia(s) de treino • R$ {(semana.dias_treino * VALOR_POR_DIA_TREINO).toFixed(2)}
+                                </p>
+                              </div>
+                              {selecionada && (
+                                <Check className="w-6 h-6 text-green-500" strokeWidth={2} />
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })
+                  )}
+                </div>
+
+                {/* Resumo */}
+                {semanasParaDebito.length > 0 && (
+                  <div className={`p-4 rounded-xl border-2 mb-4 ${
+                    modoNoturno 
+                      ? 'bg-green-900/30 border-green-700' 
+                      : 'bg-green-50 border-green-300'
+                  }`}>
+                    <p className={`text-sm font-semibold mb-2 ${modoNoturno ? 'text-slate-200' : 'text-gray-800'}`}>
+                      📊 Resumo do Débito:
+                    </p>
+                    <p className={modoNoturno ? 'text-slate-200' : 'text-gray-700'}>
+                      • Semanas selecionadas: <strong>{semanasParaDebito.length}</strong>
+                    </p>
+                    <p className={modoNoturno ? 'text-slate-200' : 'text-gray-700'}>
+                      • Total de dias de treino: <strong>{semanasParaDebito.reduce((acc, s) => acc + s.dias_treino, 0)}</strong>
+                    </p>
+                    <p className={`text-lg font-bold mt-2 ${modoNoturno ? 'text-green-400' : 'text-green-600'}`}>
+                      • Valor total: R$ {(semanasParaDebito.reduce((acc, s) => acc + s.dias_treino, 0) * VALOR_POR_DIA_TREINO).toFixed(2)}
+                    </p>
+                  </div>
+                )}
+
+                {/* Botões */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setMostrarModalGerarDebito(false);
+                      setSemanasParaDebito([]);
+                    }}
+                    className={`flex-1 py-3 rounded-2xl font-bold transition-colors ${
+                      modoNoturno 
+                        ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' 
+                        : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                    }`}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={gerarDebitoRecompensas}
+                    disabled={semanasParaDebito.length === 0}
+                    className={`flex-1 py-3 rounded-2xl font-bold transition-colors ${
+                      semanasParaDebito.length === 0
+                        ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600'
+                    }`}
+                  >
+                    Gerar Débito
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -3571,7 +3945,7 @@ const getDadosGraficoLinha = () => {
                               <ul className="space-y-1">
                                 {treino.exercicios.map((ex, idx) => (
                                   <li key={idx} className={`text-sm flex items-center gap-2 ${modoNoturno ? 'text-slate-200' : 'text-gray-700'}`}>
-                                    <Check size={14} className={modoNoturno ? 'text-purple-400' : 'text-purple-600'} />
+                                    <Check className={`w-3.5 h-3.5 ${modoNoturno ? 'text-purple-400' : 'text-purple-600'}`} strokeWidth={2} />
                                     <span className="font-medium">{ex.nome}</span>
                                     <span className={modoNoturno ? 'text-slate-300' : 'text-gray-600'}>
                                       {ex.repeticoes && `${ex.repeticoes} reps`}
@@ -3613,28 +3987,39 @@ const getDadosGraficoLinha = () => {
                           )}
                         </div>
                         <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => editarTreino(treino)}
-                            className={`p-2 rounded-full transition-colors ${
-                              modoNoturno 
-                                ? 'text-blue-400 hover:text-blue-300 hover:bg-blue-900/30' 
-                                : 'text-blue-600 hover:text-blue-800 hover:bg-blue-50'
-                            }`}
-                          >
-                            <Edit2 size={20} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => excluirTreino(treino.id)}
-                            className={`p-2 rounded-full transition-colors ${
-                              modoNoturno 
-                                ? 'text-red-400 hover:text-red-300 hover:bg-red-900/30' 
-                                : 'text-red-600 hover:text-red-800 hover:bg-red-50'
-                            }`}
-                          >
-                            <X size={20} />
-                          </button>
+                          {diaEstaEmSemanaPaga(treino.data) ? (
+                            <div className={`px-3 py-2 rounded-full text-sm font-semibold flex items-center gap-1 ${
+                              modoNoturno ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700'
+                            }`}>
+                              <Check className="w-4 h-4" strokeWidth={2} />
+                              Pago
+                            </div>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => editarTreino(treino)}
+                                className={`p-2 rounded-full transition-colors ${
+                                  modoNoturno 
+                                    ? 'text-blue-400 hover:text-blue-300 hover:bg-blue-900/30' 
+                                    : 'text-blue-600 hover:text-blue-800 hover:bg-blue-50'
+                                }`}
+                              >
+                                <Edit2 size={20} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => excluirTreino(treino.id)}
+                                className={`p-2 rounded-full transition-colors ${
+                                  modoNoturno 
+                                    ? 'text-red-400 hover:text-red-300 hover:bg-red-900/30' 
+                                    : 'text-red-600 hover:text-red-800 hover:bg-red-50'
+                                }`}
+                              >
+                                <X size={20} />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
