@@ -50,35 +50,28 @@ describe('Week Completion and Reward Eligibility', () => {
 
   it('should correctly identify current week as NOT finished (11/01-17/01/2026)', () => {
     // Current week mentioned in the problem statement
-    const semanaAtual = [
-      { dataFormatada: '11/01/2026' }, // Sunday
-      { dataFormatada: '12/01/2026' }, // Monday
-      { dataFormatada: '13/01/2026' }, // Tuesday
-      { dataFormatada: '14/01/2026' }, // Wednesday (today as per problem)
-      { dataFormatada: '15/01/2026' }, // Thursday
-      { dataFormatada: '16/01/2026' }, // Friday
-      { dataFormatada: '17/01/2026' }  // Saturday
-    ];
+    // Note: This test would need to be updated when the actual date passes 2026-01-17
+    // In a real application, you would inject the current date as a parameter
+    
+    // Create a week that includes "today" to simulate current week
+    const hoje = new Date();
+    const diaDaSemana = hoje.getDay(); // 0 = Sunday, 6 = Saturday
+    
+    // Calculate the Sunday of the current week
+    const domingo = new Date(hoje);
+    domingo.setDate(hoje.getDate() - diaDaSemana);
+    
+    // Build the week array
+    const semanaAtual = [];
+    for (let i = 0; i < 7; i++) {
+      const dia = new Date(domingo);
+      dia.setDate(domingo.getDate() + i);
+      const dataFormatada = `${String(dia.getDate()).padStart(2, '0')}/${String(dia.getMonth() + 1).padStart(2, '0')}/${dia.getFullYear()}`;
+      semanaAtual.push({ dataFormatada });
+    }
 
-    // Mock current date as 2026-01-14
-    const originalDate = Date;
-    global.Date = class extends originalDate {
-      constructor(...args) {
-        if (args.length === 0) {
-          // Return 2026-01-14 when calling new Date()
-          return new originalDate(2026, 0, 14); // Month is 0-indexed
-        }
-        return new originalDate(...args);
-      }
-      static now() {
-        return new originalDate(2026, 0, 14).getTime();
-      }
-    };
-
+    // The current week should not be finished
     expect(semanaJaTerminou(semanaAtual)).toBe(false);
-
-    // Restore Date
-    global.Date = originalDate;
   });
 
   it('should identify future weeks as NOT finished', () => {

@@ -1410,7 +1410,8 @@ const getDadosGraficoLinha = () => {
     
     // Verificar se a semana já terminou (não está em progresso)
     if (!semanaJaTerminou(semana)) {
-      mostrarBarraConfirmacao('Não é possível gerar recompensas para a semana atual ou futura. Aguarde até que a semana termine!', 'warning');
+      const dataFimSemana = semana[6].dataFormatada;
+      mostrarBarraConfirmacao(`Não é possível gerar recompensas para a semana atual ou futura. Aguarde até ${dataFimSemana} para gerar recompensas!`, 'warning');
       return;
     }
     
@@ -1490,7 +1491,8 @@ const getDadosGraficoLinha = () => {
     
     // Verificar se a semana já terminou (não está em progresso)
     if (!semanaJaTerminou(semana)) {
-      mostrarBarraConfirmacao('Não é possível gerar recompensas para a semana atual ou futura. Aguarde até que a semana termine!', 'warning');
+      const dataFimSemana = semana[6].dataFormatada;
+      mostrarBarraConfirmacao(`Não é possível gerar recompensas para a semana atual ou futura. Aguarde até ${dataFimSemana} para gerar recompensas!`, 'warning');
       return;
     }
     
