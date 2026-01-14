@@ -1246,7 +1246,7 @@ const getDadosGraficoLinha = () => {
     );
   };
   
-  // Verificar se a semana está finalizada (antes da data atual)
+  // Verificar se a semana está finalizada (antes da data atual) E já foi recompensada
   const semanaEstaFinalizada = (semana) => {
     if (!semana || semana.length === 0) return false;
     
@@ -1258,7 +1258,11 @@ const getDadosGraficoLinha = () => {
     
     dataFim.setHours(23, 59, 59, 999);
     
-    return dataFim < hoje;
+    // Verificar se a semana já passou E foi recompensada (medalhas atribuídas)
+    const jaPassou = dataFim < hoje;
+    const foiRecompensada = verificarSemanaJaRecompensada(semana) !== null;
+    
+    return jaPassou && foiRecompensada;
   };
   
   // Obter semana baseada em uma data de referência
@@ -1290,23 +1294,18 @@ const getDadosGraficoLinha = () => {
     return semana.some(dia => treinos.some(t => t.data === dia.dataFormatada));
   };
   
-  // Verificar se a semana está completa dentro do mês
+  // Verificar se a semana está completa (sempre considera todos os 7 dias)
   const verificarSemanaCompleta = (semana) => {
     if (!semana || semana.length === 0) return { completa: true, diasNoMes: 7 };
     
-    const mesReferencia = semanaSelecionadaRecompensa ? new Date(semanaSelecionadaRecompensa).getMonth() : new Date().getMonth();
-    
-    let diasNoMes = 0;
-    semana.forEach(dia => {
-      if (dia.data.getMonth() === mesReferencia) {
-        diasNoMes++;
-      }
-    });
+    // Remover bloqueio por mês - contar todos os 7 dias da semana
+    // independentemente de pertencerem a meses diferentes
+    const diasNoMes = 7; // Sempre considerar a semana completa
     
     return {
-      completa: diasNoMes === 7,
+      completa: true,
       diasNoMes: diasNoMes,
-      porcentagem: (diasNoMes / 7) * 100
+      porcentagem: 100
     };
   };
   
@@ -1420,48 +1419,32 @@ const getDadosGraficoLinha = () => {
       const dataInicioSemana = semana[0].dataFormatada; // Domingo
       const dataFimSemana = semana[6].dataFormatada; // Sábado
       
-      // Issue #1: Check if week is already rewarded
-      const semanaExistente = verificarSemanaJaRecompensada(semana);
-      
-      if (semanaExistente) {
-        // Update existing reward
-        const { error } = await supabase
-          .from('recompensas')
-          .update({
+      // Use upsert to avoid duplicates and handle updates automatically
+      // This works with the unique constraint on (data_inicio_semana, data_fim_semana)
+      const { error } = await supabase
+        .from('recompensas')
+        .upsert(
+          {
+            data_inicio_semana: dataInicioSemana,
+            data_fim_semana: dataFimSemana,
             dias_treino: diasComTreino.length,
             concedido_em: new Date().toISOString()
-          })
-          .eq('data_inicio_semana', dataInicioSemana)
-          .eq('data_fim_semana', dataFimSemana);
+          },
+          {
+            onConflict: 'data_inicio_semana,data_fim_semana',
+            ignoreDuplicates: false // Update on conflict
+          }
+        );
 
-        if (error) {
-          console.error('Erro ao atualizar recompensa:', error);
-          mostrarBarraConfirmacao('Erro ao atualizar recompensa. Tente novamente.', 'error');
-        } else {
-          // Recarregar recompensas para atualizar a interface
-          await carregarRecompensas();
-          mostrarBarraConfirmacao('🎉 Recompensa atualizada com sucesso!', 'success');
-        }
+      if (error) {
+        console.error('Erro ao salvar recompensa:', error);
+        mostrarBarraConfirmacao('Erro ao salvar recompensa. Tente novamente.', 'error');
       } else {
-        // Insert new reward
-        const { error } = await supabase
-          .from('recompensas')
-          .insert([
-            {
-              data_inicio_semana: dataInicioSemana,
-              data_fim_semana: dataFimSemana,
-              dias_treino: diasComTreino.length
-            }
-          ]);
-
-        if (error) {
-          console.error('Erro ao salvar recompensa:', error);
-          mostrarBarraConfirmacao('Erro ao salvar recompensa. A recompensa foi concedida, mas não foi salva no banco de dados.', 'warning');
-        } else {
-          // Recarregar recompensas para atualizar a interface
-          await carregarRecompensas();
-          mostrarBarraConfirmacao('🎉 Parabéns! Você ganhou uma recompensa por manter a consistência!', 'success');
-        }
+        // Recarregar recompensas para atualizar a interface
+        await carregarRecompensas();
+        const semanaExistente = verificarSemanaJaRecompensada(semana);
+        const mensagem = semanaExistente ? '🎉 Recompensa atualizada com sucesso!' : '🎉 Parabéns! Você ganhou uma recompensa por manter a consistência!';
+        mostrarBarraConfirmacao(mensagem, 'success');
       }
     } catch (error) {
       console.error('Erro ao salvar recompensa:', error);
@@ -1492,43 +1475,26 @@ const getDadosGraficoLinha = () => {
       const dataInicioSemana = semana[0].dataFormatada; // Domingo
       const dataFimSemana = semana[6].dataFormatada; // Sábado
       
-      // Issue #1: Check if week is already rewarded
-      const semanaExistente = verificarSemanaJaRecompensada(semana);
-      
-      if (semanaExistente) {
-        // Update existing reward
-        const { error } = await supabase
-          .from('recompensas')
-          .update({
+      // Use upsert to avoid duplicates and handle updates automatically
+      const { error } = await supabase
+        .from('recompensas')
+        .upsert(
+          {
+            data_inicio_semana: dataInicioSemana,
+            data_fim_semana: dataFimSemana,
             dias_treino: diasComTreino.length,
             concedido_em: new Date().toISOString()
-          })
-          .eq('data_inicio_semana', dataInicioSemana)
-          .eq('data_fim_semana', dataFimSemana);
+          },
+          {
+            onConflict: 'data_inicio_semana,data_fim_semana',
+            ignoreDuplicates: false // Update on conflict
+          }
+        );
 
-        if (error) {
-          console.error('Erro ao atualizar recompensa:', error);
-        } else {
-          await carregarRecompensas();
-        }
+      if (error) {
+        console.error('Erro ao salvar recompensa:', error);
       } else {
-        // Insert new reward
-        const { error } = await supabase
-          .from('recompensas')
-          .insert([
-            {
-              data_inicio_semana: dataInicioSemana,
-              data_fim_semana: dataFimSemana,
-              dias_treino: diasComTreino.length
-            }
-          ]);
-
-        if (error) {
-          console.error('Erro ao salvar recompensa:', error);
-        } else {
-          // Recarregar recompensas para atualizar a interface
-          await carregarRecompensas();
-        }
+        await carregarRecompensas();
       }
     } catch (error) {
       console.error('Erro ao salvar recompensa:', error);
