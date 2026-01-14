@@ -1845,19 +1845,20 @@ const getDadosGraficoLinha = () => {
 
           mostrarBarraConfirmacao('Débito pago completamente!', 'success');
         } else {
-          // Pagamento parcial - atualizar débito existente e criar nova parcela
+          // Pagamento parcial - atualizar débito existente
+          const numeroParcela = (debitoSelecionado.numero_parcela || 0) + 1;
           const { error: updateError } = await supabase
             .from('debitos')
             .update({
               valor_pago: novoValorPago,
-              valor_restante: novoValorRestante
+              valor_restante: novoValorRestante,
+              numero_parcela: numeroParcela
             })
             .eq('id', debitoSelecionado.id);
 
           if (updateError) throw updateError;
 
           // Adicionar pagamento parcial na tabela de transferências
-          const numeroParcela = (debitoSelecionado.numero_parcela || 0) + 1;
           const { error: transferenciaError } = await supabase
             .from('transferencias')
             .insert([{
@@ -2063,7 +2064,7 @@ const getDadosGraficoLinha = () => {
                     </div>
 
                     {debitoSelecionado?.id === debito.id ? (
-                      <div className="space-y-3 border-t-2 pt-4 ${modoNoturno ? 'border-slate-600' : 'border-gray-200'}">
+                      <div className={`space-y-3 border-t-2 pt-4 ${modoNoturno ? 'border-slate-600' : 'border-gray-200'}`}>
                         <label className={`block text-sm font-semibold mb-2 ${
                           modoNoturno ? 'text-slate-200' : 'text-gray-700'
                         }`}>
