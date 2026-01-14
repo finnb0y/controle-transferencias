@@ -1405,13 +1405,22 @@ const getDadosGraficoLinha = () => {
     return { valido: true, aviso: false };
   };
   
-  const adicionarRecompensa = async () => {
-    const semana = obterSemanaAtual();
-    
+  // Helper function to validate week can be rewarded
+  const validarSemanaParaRecompensa = (semana) => {
     // Verificar se a semana já terminou (não está em progresso)
     if (!semanaJaTerminou(semana)) {
       const dataFimSemana = semana[6].dataFormatada;
       mostrarBarraConfirmacao(`Não é possível gerar recompensas para a semana atual ou futura. Aguarde até ${dataFimSemana} para gerar recompensas!`, 'warning');
+      return false;
+    }
+    return true;
+  };
+  
+  const adicionarRecompensa = async () => {
+    const semana = obterSemanaAtual();
+    
+    // Validar se a semana pode ser recompensada
+    if (!validarSemanaParaRecompensa(semana)) {
       return;
     }
     
@@ -1489,10 +1498,8 @@ const getDadosGraficoLinha = () => {
     // Salvar recompensa mesmo sem requisitos mínimos
     const semana = obterSemanaAtual();
     
-    // Verificar se a semana já terminou (não está em progresso)
-    if (!semanaJaTerminou(semana)) {
-      const dataFimSemana = semana[6].dataFormatada;
-      mostrarBarraConfirmacao(`Não é possível gerar recompensas para a semana atual ou futura. Aguarde até ${dataFimSemana} para gerar recompensas!`, 'warning');
+    // Validar se a semana pode ser recompensada
+    if (!validarSemanaParaRecompensa(semana)) {
       return;
     }
     
