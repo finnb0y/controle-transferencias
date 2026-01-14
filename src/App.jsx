@@ -4,6 +4,7 @@ import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, LineChart, Lin
 import { supabase } from './supabaseClient';
 
 const CONFIRMATION_TIMEOUT = 4000; // 4 seconds
+const VALOR_POR_DIA_TREINO = 10; // Reais por dia de treino
 
 const ControleTransferencias = () => {
   const [tela, setTela] = useState('inicial');
@@ -1178,35 +1179,31 @@ const getDadosGraficoLinha = () => {
   
   // Funções do Sistema de Recompensas
   
+  // Helper function to parse date in DD/MM/YYYY format
+  const parseDataFormatada = (dataFormatada) => {
+    const partes = dataFormatada.split('/');
+    if (partes.length !== 3) return null;
+    
+    const dia = parseInt(partes[0]);
+    const mes = parseInt(partes[1]) - 1; // Month is 0-indexed
+    const ano = parseInt(partes[2]);
+    
+    return new Date(ano, mes, dia);
+  };
+  
   // Verificar se uma data específica faz parte de uma semana recompensada
   const diaEstaEmSemanaRecompensada = (dataFormatada) => {
     if (semanasRecompensadas.length === 0) return false;
     
-    // Converter a data formatada para objeto Date
-    const partes = dataFormatada.split('/');
-    if (partes.length !== 3) return false;
-    
-    const dia = parseInt(partes[0]);
-    const mes = parseInt(partes[1]) - 1; // Mês em JS é 0-indexed
-    const ano = parseInt(partes[2]);
-    const dataAlvo = new Date(ano, mes, dia);
+    const dataAlvo = parseDataFormatada(dataFormatada);
+    if (!dataAlvo) return false;
     
     // Verificar se a data está dentro de alguma semana recompensada
     return semanasRecompensadas.some(semana => {
-      const partesInicio = semana.data_inicio_semana.split('/');
-      const partesFim = semana.data_fim_semana.split('/');
+      const dataInicio = parseDataFormatada(semana.data_inicio_semana);
+      const dataFim = parseDataFormatada(semana.data_fim_semana);
       
-      const dataInicio = new Date(
-        parseInt(partesInicio[2]),
-        parseInt(partesInicio[1]) - 1,
-        parseInt(partesInicio[0])
-      );
-      
-      const dataFim = new Date(
-        parseInt(partesFim[2]),
-        parseInt(partesFim[1]) - 1,
-        parseInt(partesFim[0])
-      );
+      if (!dataInicio || !dataFim) return false;
       
       return dataAlvo >= dataInicio && dataAlvo <= dataFim;
     });
@@ -1216,33 +1213,17 @@ const getDadosGraficoLinha = () => {
   const diaEstaEmSemanaPaga = (dataFormatada) => {
     if (semanasRecompensadas.length === 0) return false;
     
-    // Converter a data formatada para objeto Date
-    const partes = dataFormatada.split('/');
-    if (partes.length !== 3) return false;
-    
-    const dia = parseInt(partes[0]);
-    const mes = parseInt(partes[1]) - 1;
-    const ano = parseInt(partes[2]);
-    const dataAlvo = new Date(ano, mes, dia);
+    const dataAlvo = parseDataFormatada(dataFormatada);
+    if (!dataAlvo) return false;
     
     // Verificar se a data está dentro de alguma semana paga
     return semanasRecompensadas.some(semana => {
       if (!semana.pago) return false; // Só considerar semanas pagas
       
-      const partesInicio = semana.data_inicio_semana.split('/');
-      const partesFim = semana.data_fim_semana.split('/');
+      const dataInicio = parseDataFormatada(semana.data_inicio_semana);
+      const dataFim = parseDataFormatada(semana.data_fim_semana);
       
-      const dataInicio = new Date(
-        parseInt(partesInicio[2]),
-        parseInt(partesInicio[1]) - 1,
-        parseInt(partesInicio[0])
-      );
-      
-      const dataFim = new Date(
-        parseInt(partesFim[2]),
-        parseInt(partesFim[1]) - 1,
-        parseInt(partesFim[0])
-      );
+      if (!dataInicio || !dataFim) return false;
       
       return dataAlvo >= dataInicio && dataAlvo <= dataFim;
     });
@@ -1269,13 +1250,9 @@ const getDadosGraficoLinha = () => {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
     
-    const dataFimSemana = semana[6].dataFormatada;
-    const partes = dataFimSemana.split('/');
-    const dataFim = new Date(
-      parseInt(partes[2]),
-      parseInt(partes[1]) - 1,
-      parseInt(partes[0])
-    );
+    const dataFim = parseDataFormatada(semana[6].dataFormatada);
+    if (!dataFim) return false;
+    
     dataFim.setHours(23, 59, 59, 999);
     
     return dataFim < hoje;
@@ -1638,13 +1615,13 @@ const getDadosGraficoLinha = () => {
       // Calcular total de dias de treino
       const totalDiasTreino = semanasOrdenadas.reduce((acc, s) => acc + s.dias_treino, 0);
       
-      // Valor: 10 reais por dia de treino
-      const valorTotal = totalDiasTreino * 10;
+      // Valor: VALOR_POR_DIA_TREINO reais por dia de treino
+      const valorTotal = totalDiasTreino * VALOR_POR_DIA_TREINO;
       
-      // Formato da descrição: "Training Weeks DD/MM/YY to DD/MM/YY"
+      // Formato da descrição: "Semanas de Treino DD/MM/YY a DD/MM/YY"
       const primeiraData = semanasOrdenadas[0].data_inicio_semana;
       const ultimaData = semanasOrdenadas[semanasOrdenadas.length - 1].data_fim_semana;
-      const descricao = `Training Weeks ${primeiraData} to ${ultimaData}`;
+      const descricao = `Semanas de Treino ${primeiraData} a ${ultimaData}`;
       
       const dataAtual = new Date();
       const dataFormatada = `${String(dataAtual.getDate()).padStart(2, '0')}/${String(dataAtual.getMonth() + 1).padStart(2, '0')}/${dataAtual.getFullYear()}`;
@@ -1666,19 +1643,24 @@ const getDadosGraficoLinha = () => {
       
       const debitoId = debitoData[0].id;
       
-      // Atualizar recompensas com o debito_id
-      for (const semana of semanasOrdenadas) {
-        const { error: updateError } = await supabase
+      // Atualizar recompensas com o debito_id (tentar atualizar todas)
+      const updatePromises = semanasOrdenadas.map(semana => 
+        supabase
           .from('recompensas')
           .update({ debito_id: debitoId })
-          .eq('id', semana.id);
-        
-        if (updateError) {
-          console.error('Erro ao atualizar recompensa com debito_id:', updateError);
-        }
-      }
+          .eq('id', semana.id)
+      );
       
-      mostrarBarraConfirmacao(`Débito criado com sucesso! Valor: R$ ${valorTotal.toFixed(2)} (${totalDiasTreino} dias de treino)`, 'success');
+      const results = await Promise.allSettled(updatePromises);
+      
+      // Verificar se alguma atualização falhou
+      const falhas = results.filter(r => r.status === 'rejected');
+      if (falhas.length > 0) {
+        console.error('Algumas recompensas não puderam ser vinculadas ao débito:', falhas);
+        mostrarBarraConfirmacao(`Débito criado, mas ${falhas.length} semana(s) não puderam ser vinculadas. Verifique o console.`, 'warning');
+      } else {
+        mostrarBarraConfirmacao(`Débito criado com sucesso! Valor: R$ ${valorTotal.toFixed(2)} (${totalDiasTreino} dias de treino)`, 'success');
+      }
       
       // Recarregar dados
       await carregarDebitos();
