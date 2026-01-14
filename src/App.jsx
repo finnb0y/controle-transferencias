@@ -5,6 +5,7 @@ import { supabase } from './supabaseClient';
 
 const CONFIRMATION_TIMEOUT = 4000; // 4 seconds
 const VALOR_POR_DIA_TREINO = 10; // Reais por dia de treino
+const DIAS_POR_SEMANA = 7; // Dias em uma semana completa
 
 const ControleTransferencias = () => {
   const [tela, setTela] = useState('inicial');
@@ -1581,7 +1582,13 @@ const getDadosGraficoLinha = () => {
       });
       
       // Calcular total de dias de treino
-      const totalDiasTreino = semanasOrdenadas.reduce((acc, s) => acc + s.dias_treino, 0);
+      // Para débito: se a semana foi recompensada (atingiu o mínimo), conta 7 dias
+      // Isso incentiva o cumprimento da meta semanal com pagamento pela semana completa
+      const totalDiasTreino = semanasOrdenadas.reduce((acc, _) => {
+        // Se a semana foi recompensada, ela atingiu o mínimo necessário
+        // Portanto, pagar pela semana completa (DIAS_POR_SEMANA dias)
+        return acc + DIAS_POR_SEMANA;
+      }, 0);
       
       // Valor: VALOR_POR_DIA_TREINO reais por dia de treino
       const valorTotal = totalDiasTreino * VALOR_POR_DIA_TREINO;
@@ -1627,7 +1634,7 @@ const getDadosGraficoLinha = () => {
         console.error('Algumas recompensas não puderam ser vinculadas ao débito:', falhas);
         mostrarBarraConfirmacao(`Débito criado, mas ${falhas.length} semana(s) não puderam ser vinculadas. Tente novamente mais tarde.`, 'warning');
       } else {
-        mostrarBarraConfirmacao(`Débito criado com sucesso! Valor: R$ ${valorTotal.toFixed(2)} (${totalDiasTreino} dias de treino)`, 'success');
+        mostrarBarraConfirmacao(`Débito criado com sucesso! Valor: R$ ${valorTotal.toFixed(2)} (${semanasOrdenadas.length} semana(s) × ${DIAS_POR_SEMANA} dias)`, 'success');
       }
       
       // Recarregar dados
@@ -3429,7 +3436,7 @@ const getDadosGraficoLinha = () => {
                 </div>
 
                 <p className={`mb-6 ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
-                  Selecione as semanas que deseja incluir no débito. Cada dia de treino vale R$ {VALOR_POR_DIA_TREINO},00.
+                  Selecione as semanas que deseja incluir no débito. Semanas que atingiram a meta valem R$ {(DIAS_POR_SEMANA * VALOR_POR_DIA_TREINO).toFixed(2)} ({DIAS_POR_SEMANA} dias × R$ {VALOR_POR_DIA_TREINO},00).
                 </p>
 
                 {/* Lista de semanas não pagas */}
@@ -3473,7 +3480,7 @@ const getDadosGraficoLinha = () => {
                                   Semana: {semana.data_inicio_semana} - {semana.data_fim_semana}
                                 </p>
                                 <p className={`text-sm ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
-                                  {semana.dias_treino} dia(s) de treino • R$ {(semana.dias_treino * VALOR_POR_DIA_TREINO).toFixed(2)}
+                                  {semana.dias_treino} dia(s) de treino • R$ {(DIAS_POR_SEMANA * VALOR_POR_DIA_TREINO).toFixed(2)} (semana completa)
                                 </p>
                               </div>
                               {selecionada && (
@@ -3500,10 +3507,10 @@ const getDadosGraficoLinha = () => {
                       • Semanas selecionadas: <strong>{semanasParaDebito.length}</strong>
                     </p>
                     <p className={modoNoturno ? 'text-slate-200' : 'text-gray-700'}>
-                      • Total de dias de treino: <strong>{semanasParaDebito.reduce((acc, s) => acc + s.dias_treino, 0)}</strong>
+                      • Total de semanas: <strong>{semanasParaDebito.length}</strong> (cada semana = {DIAS_POR_SEMANA} dias)
                     </p>
                     <p className={`text-lg font-bold mt-2 ${modoNoturno ? 'text-green-400' : 'text-green-600'}`}>
-                      • Valor total: R$ {(semanasParaDebito.reduce((acc, s) => acc + s.dias_treino, 0) * VALOR_POR_DIA_TREINO).toFixed(2)}
+                      • Valor total: R$ {(semanasParaDebito.length * DIAS_POR_SEMANA * VALOR_POR_DIA_TREINO).toFixed(2)}
                     </p>
                   </div>
                 )}
