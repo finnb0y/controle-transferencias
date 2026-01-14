@@ -2902,8 +2902,7 @@ const getDadosGraficoLinha = () => {
                           aria-hidden="true"
                         >
                           <Check 
-                            size={12} 
-                            className="text-green-500 drop-shadow-sm sm:w-4 sm:h-4 font-bold" 
+                            className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 drop-shadow-sm font-bold" 
                             strokeWidth={3}
                           />
                         </div>
@@ -3299,7 +3298,7 @@ const getDadosGraficoLinha = () => {
                                   ? 'bg-slate-600 text-slate-300' 
                                   : 'bg-gray-300 text-gray-600'
                             }`}>
-                              {estaMarcado ? <Check size={20} /> : dia.diaSemana}
+                              {estaMarcado ? <Check className="w-5 h-5" strokeWidth={2} /> : dia.diaSemana}
                             </div>
                             <div className="text-left">
                               <p className={`font-bold ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
@@ -3512,7 +3511,7 @@ const getDadosGraficoLinha = () => {
                                 </p>
                               </div>
                               {selecionada && (
-                                <Check size={24} className="text-green-500" />
+                                <Check className="w-6 h-6 text-green-500" strokeWidth={2} />
                               )}
                             </div>
                           </button>
@@ -3946,7 +3945,7 @@ const getDadosGraficoLinha = () => {
                               <ul className="space-y-1">
                                 {treino.exercicios.map((ex, idx) => (
                                   <li key={idx} className={`text-sm flex items-center gap-2 ${modoNoturno ? 'text-slate-200' : 'text-gray-700'}`}>
-                                    <Check size={14} className={modoNoturno ? 'text-purple-400' : 'text-purple-600'} />
+                                    <Check className="w-3.5 h-3.5" strokeWidth={2} style={{ color: modoNoturno ? '#c084fc' : '#9333ea' }} />
                                     <span className="font-medium">{ex.nome}</span>
                                     <span className={modoNoturno ? 'text-slate-300' : 'text-gray-600'}>
                                       {ex.repeticoes && `${ex.repeticoes} reps`}
@@ -3992,7 +3991,7 @@ const getDadosGraficoLinha = () => {
                             <div className={`px-3 py-2 rounded-full text-sm font-semibold flex items-center gap-1 ${
                               modoNoturno ? 'bg-green-900/30 text-green-400' : 'bg-green-100 text-green-700'
                             }`}>
-                              <Check size={16} />
+                              <Check className="w-4 h-4" strokeWidth={2} />
                               Pago
                             </div>
                           ) : (
