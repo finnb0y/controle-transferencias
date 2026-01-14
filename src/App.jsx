@@ -1659,7 +1659,7 @@ const getDadosGraficoLinha = () => {
       const falhas = results.filter(r => r.status === 'rejected');
       if (falhas.length > 0) {
         console.error('Algumas recompensas não puderam ser vinculadas ao débito:', falhas);
-        mostrarBarraConfirmacao(`Débito criado, mas ${falhas.length} semana(s) não puderam ser vinculadas. Verifique o console.`, 'warning');
+        mostrarBarraConfirmacao(`Débito criado, mas ${falhas.length} semana(s) não puderam ser vinculadas. Tente novamente mais tarde.`, 'warning');
       } else {
         mostrarBarraConfirmacao(`Débito criado com sucesso! Valor: R$ ${valorTotal.toFixed(2)} (${totalDiasTreino} dias de treino)`, 'success');
       }
@@ -3463,7 +3463,7 @@ const getDadosGraficoLinha = () => {
                 </div>
 
                 <p className={`mb-6 ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
-                  Selecione as semanas que deseja incluir no débito. Cada dia de treino vale R$ {VALOR_POR_DIA_TREINO.toFixed(2)}.
+                  Selecione as semanas que deseja incluir no débito. Cada dia de treino vale R$ {VALOR_POR_DIA_TREINO},00.
                 </p>
 
                 {/* Lista de semanas não pagas */}
@@ -3945,7 +3945,7 @@ const getDadosGraficoLinha = () => {
                               <ul className="space-y-1">
                                 {treino.exercicios.map((ex, idx) => (
                                   <li key={idx} className={`text-sm flex items-center gap-2 ${modoNoturno ? 'text-slate-200' : 'text-gray-700'}`}>
-                                    <Check className="w-3.5 h-3.5" strokeWidth={2} style={{ color: modoNoturno ? '#c084fc' : '#9333ea' }} />
+                                    <Check className={`w-3.5 h-3.5 ${modoNoturno ? 'text-purple-400' : 'text-purple-600'}`} strokeWidth={2} />
                                     <span className="font-medium">{ex.nome}</span>
                                     <span className={modoNoturno ? 'text-slate-300' : 'text-gray-600'}>
                                       {ex.repeticoes && `${ex.repeticoes} reps`}
