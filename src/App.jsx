@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, DollarSign, X, Download, Filter, PieChart, TrendingUp, Home, Plus, Eye, Dumbbell, Check, Edit2, Save, Award, Moon, Sun, Activity } from 'lucide-react';
+import { Calendar, DollarSign, X, Download, Filter, PieChart, TrendingUp, Home, Plus, Eye, Dumbbell, Check, Edit2, Save, Award, Moon, Sun, Activity, CreditCard, Trash2 } from 'lucide-react';
 import { PieChart as RechartsPie, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { supabase } from './supabaseClient';
 
@@ -69,6 +69,18 @@ const ControleTransferencias = () => {
   // Estado para mostrar estatísticas como modal
   const [mostrarEstatisticas, setMostrarEstatisticas] = useState(false);
 
+  // Estados para Débitos
+  const [debitos, setDebitos] = useState([]);
+  const [debitoSelecionado, setDebitoSelecionado] = useState(null);
+  const [mostrarFormularioDebito, setMostrarFormularioDebito] = useState(false);
+  const [formularioDebito, setFormularioDebito] = useState({
+    nome: '',
+    valor: ''
+  });
+  const [formularioPagamento, setFormularioPagamento] = useState({
+    valorPagamento: ''
+  });
+
 
   const [formulario, setFormulario] = useState({
     valor: '',
@@ -114,6 +126,7 @@ const ControleTransferencias = () => {
     carregarDados();
     carregarTreinos();
     carregarRecompensas();
+    carregarDebitos();
     
     // Cleanup function to clear timer on component unmount
     return () => {
@@ -196,6 +209,26 @@ const ControleTransferencias = () => {
     } catch (error) {
       console.error('Erro ao carregar recompensas:', error);
       setSemanasRecompensadas([]);
+    }
+  };
+  
+  const carregarDebitos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('debitos')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.log('Tabela debitos não encontrada ou erro (esperado na primeira execução):', error);
+        setDebitos([]);
+        return;
+      }
+
+      setDebitos(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar débitos:', error);
+      setDebitos([]);
     }
   };
 
@@ -1615,36 +1648,54 @@ const getDadosGraficoLinha = () => {
   // TELA DE MENU DE TRANSFERÊNCIAS
   if (tela === 'transferencias-menu') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className={`min-h-screen p-4 flex items-center justify-center ${
+        modoNoturno ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-gradient-to-br from-blue-50 to-indigo-100'
+      }`}>
         <div className="max-w-6xl w-full">
           <button
             onClick={() => setTela('inicial')}
-            className="mb-6 flex items-center gap-2 bg-white px-6 py-3 rounded-full shadow hover:shadow-md transition-all"
+            className={`mb-6 flex items-center gap-2 px-6 py-3 rounded-full shadow hover:shadow-md transition-all ${
+              modoNoturno ? 'bg-slate-700 text-slate-100' : 'bg-white'
+            }`}
           >
             <Home size={20} />
             Voltar para Início
           </button>
 
           <div className="text-center mb-12">
-            <h1 className="text-5xl font-bold text-gray-800 mb-4 flex items-center justify-center gap-4">
-              <DollarSign className="text-blue-600" size={56} />
+            <h1 className={`text-5xl font-bold mb-4 flex items-center justify-center gap-4 ${
+              modoNoturno ? 'text-slate-100' : 'text-gray-800'
+            }`}>
+              <DollarSign className={modoNoturno ? 'text-blue-400' : 'text-blue-600'} size={56} />
               Transferências
             </h1>
-            <p className="text-xl text-gray-600">Escolha uma opção para gerenciar suas transferências</p>
+            <p className={`text-xl ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
+              Escolha uma opção para gerenciar suas transferências
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Visualizar Histórico */}
             <button
               onClick={() => setTela('visualizar')}
-              className="bg-white rounded-3xl shadow-xl p-12 hover:shadow-2xl transition-all transform hover:scale-105 group"
+              className={`rounded-3xl shadow-xl p-12 hover:shadow-2xl transition-all transform hover:scale-105 group ${
+                modoNoturno ? 'bg-slate-700' : 'bg-white'
+              }`}
             >
               <div className="flex flex-col items-center gap-6">
-                <div className="bg-green-100 p-8 rounded-full group-hover:bg-green-600 transition-colors">
-                  <Eye className="text-green-600 group-hover:text-white transition-colors" size={64} />
+                <div className={`p-8 rounded-full transition-colors ${
+                  modoNoturno 
+                    ? 'bg-green-900/30 group-hover:bg-green-600' 
+                    : 'bg-green-100 group-hover:bg-green-600'
+                }`}>
+                  <Eye className={`transition-colors ${
+                    modoNoturno ? 'text-green-400 group-hover:text-white' : 'text-green-600 group-hover:text-white'
+                  }`} size={64} />
                 </div>
-                <h2 className="text-3xl font-bold text-gray-800">Visualizar Histórico</h2>
-                <p className="text-gray-600 text-center text-lg">
+                <h2 className={`text-3xl font-bold ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
+                  Visualizar Histórico
+                </h2>
+                <p className={`text-center text-lg ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
                   Veja gráficos, relatórios e exporte planilhas das suas transferências
                 </p>
               </div>
@@ -1653,19 +1704,453 @@ const getDadosGraficoLinha = () => {
             {/* Adicionar Transferências */}
             <button
               onClick={() => setTela('adicionar')}
-              className="bg-white rounded-3xl shadow-xl p-12 hover:shadow-2xl transition-all transform hover:scale-105 group"
+              className={`rounded-3xl shadow-xl p-12 hover:shadow-2xl transition-all transform hover:scale-105 group ${
+                modoNoturno ? 'bg-slate-700' : 'bg-white'
+              }`}
             >
               <div className="flex flex-col items-center gap-6">
-                <div className="bg-blue-100 p-8 rounded-full group-hover:bg-blue-600 transition-colors">
-                  <Plus className="text-blue-600 group-hover:text-white transition-colors" size={64} />
+                <div className={`p-8 rounded-full transition-colors ${
+                  modoNoturno 
+                    ? 'bg-blue-900/30 group-hover:bg-blue-600' 
+                    : 'bg-blue-100 group-hover:bg-blue-600'
+                }`}>
+                  <Plus className={`transition-colors ${
+                    modoNoturno ? 'text-blue-400 group-hover:text-white' : 'text-blue-600 group-hover:text-white'
+                  }`} size={64} />
                 </div>
-                <h2 className="text-3xl font-bold text-gray-800">Adicionar Transferências</h2>
-                <p className="text-gray-600 text-center text-lg">
+                <h2 className={`text-3xl font-bold ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
+                  Adicionar Transferências
+                </h2>
+                <p className={`text-center text-lg ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
                   Registre novas transferências com data, valor e tipo
                 </p>
               </div>
             </button>
+            
+            {/* Débitos */}
+            <button
+              onClick={() => setTela('debitos')}
+              className={`rounded-3xl shadow-xl p-12 hover:shadow-2xl transition-all transform hover:scale-105 group ${
+                modoNoturno ? 'bg-slate-700' : 'bg-white'
+              }`}
+            >
+              <div className="flex flex-col items-center gap-6">
+                <div className={`p-8 rounded-full transition-colors ${
+                  modoNoturno 
+                    ? 'bg-orange-900/30 group-hover:bg-orange-600' 
+                    : 'bg-orange-100 group-hover:bg-orange-600'
+                }`}>
+                  <CreditCard className={`transition-colors ${
+                    modoNoturno ? 'text-orange-400 group-hover:text-white' : 'text-orange-600 group-hover:text-white'
+                  }`} size={64} />
+                </div>
+                <h2 className={`text-3xl font-bold ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
+                  Débitos
+                </h2>
+                <p className={`text-center text-lg ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
+                  Gerencie débitos ativos e histórico de pagamentos
+                </p>
+              </div>
+            </button>
           </div>
+        </div>
+        
+        {renderNotificacoes()}
+      </div>
+    );
+  }
+
+  // TELA DE DÉBITOS
+  if (tela === 'debitos') {
+    const debitosAtivos = debitos.filter(d => d.status === 'ativo');
+    const debitosPagos = debitos.filter(d => d.status === 'pago');
+    
+    const adicionarDebito = async () => {
+      if (!formularioDebito.nome || !formularioDebito.valor) {
+        mostrarBarraConfirmacao('Por favor, preencha o nome e o valor do débito!', 'warning');
+        return;
+      }
+
+      try {
+        const valorTotal = parseFloat(formularioDebito.valor.replace(/\./g, '').replace(',', '.'));
+        const dataAtual = new Date();
+        const dataFormatada = `${String(dataAtual.getDate()).padStart(2, '0')}/${String(dataAtual.getMonth() + 1).padStart(2, '0')}/${dataAtual.getFullYear()}`;
+
+        const { error } = await supabase
+          .from('debitos')
+          .insert([{
+            nome: formularioDebito.nome,
+            valor_total: valorTotal,
+            valor_pago: 0,
+            valor_restante: valorTotal,
+            data_criacao: dataFormatada,
+            status: 'ativo'
+          }]);
+
+        if (error) throw error;
+
+        mostrarBarraConfirmacao('Débito adicionado com sucesso!', 'success');
+        setFormularioDebito({ nome: '', valor: '' });
+        setMostrarFormularioDebito(false);
+        await carregarDebitos();
+      } catch (error) {
+        console.error('Erro ao adicionar débito:', error);
+        mostrarBarraConfirmacao('Erro ao adicionar débito. Tente novamente.', 'error');
+      }
+    };
+
+    const pagarDebito = async () => {
+      if (!debitoSelecionado || !formularioPagamento.valorPagamento) {
+        mostrarBarraConfirmacao('Por favor, informe o valor do pagamento!', 'warning');
+        return;
+      }
+
+      try {
+        const valorPagamento = parseFloat(formularioPagamento.valorPagamento.replace(/\./g, '').replace(',', '.'));
+        const novoValorPago = debitoSelecionado.valor_pago + valorPagamento;
+        const novoValorRestante = debitoSelecionado.valor_total - novoValorPago;
+
+        if (valorPagamento > debitoSelecionado.valor_restante) {
+          mostrarBarraConfirmacao('Valor do pagamento não pode exceder o valor restante!', 'error');
+          return;
+        }
+
+        const dataAtual = new Date();
+        const dataFormatada = `${String(dataAtual.getDate()).padStart(2, '0')}/${String(dataAtual.getMonth() + 1).padStart(2, '0')}/${dataAtual.getFullYear()}`;
+
+        // Se pagamento total, marcar como pago
+        if (novoValorRestante === 0) {
+          const { error: updateError } = await supabase
+            .from('debitos')
+            .update({
+              valor_pago: novoValorPago,
+              valor_restante: 0,
+              status: 'pago'
+            })
+            .eq('id', debitoSelecionado.id);
+
+          if (updateError) throw updateError;
+
+          // Adicionar na tabela de transferências
+          const { error: transferenciaError } = await supabase
+            .from('transferencias')
+            .insert([{
+              valor: formularioPagamento.valorPagamento,
+              data: dataFormatada,
+              tipo: 'digital',
+              descricao: `Pagamento: ${debitoSelecionado.nome}`
+            }]);
+
+          if (transferenciaError) throw transferenciaError;
+
+          mostrarBarraConfirmacao('Débito pago completamente!', 'success');
+        } else {
+          // Pagamento parcial - atualizar débito existente
+          const numeroParcela = (debitoSelecionado.numero_parcela || 0) + 1;
+          const { error: updateError } = await supabase
+            .from('debitos')
+            .update({
+              valor_pago: novoValorPago,
+              valor_restante: novoValorRestante,
+              numero_parcela: numeroParcela
+            })
+            .eq('id', debitoSelecionado.id);
+
+          if (updateError) throw updateError;
+
+          // Adicionar pagamento parcial na tabela de transferências
+          const { error: transferenciaError } = await supabase
+            .from('transferencias')
+            .insert([{
+              valor: formularioPagamento.valorPagamento,
+              data: dataFormatada,
+              tipo: 'digital',
+              descricao: `Pagamento parcial ${numeroParcela}: ${debitoSelecionado.nome}`
+            }]);
+
+          if (transferenciaError) throw transferenciaError;
+
+          mostrarBarraConfirmacao(`Pagamento parcial registrado! Restante: R$ ${novoValorRestante.toFixed(2)}`, 'success');
+        }
+
+        setFormularioPagamento({ valorPagamento: '' });
+        setDebitoSelecionado(null);
+        await carregarDebitos();
+        await carregarDados();
+      } catch (error) {
+        console.error('Erro ao pagar débito:', error);
+        mostrarBarraConfirmacao('Erro ao processar pagamento. Tente novamente.', 'error');
+      }
+    };
+
+    const excluirDebito = async (id) => {
+      const confirmado = await mostrarModalConfirmacaoFn('Tem certeza que deseja excluir este débito?');
+      if (!confirmado) return;
+
+      try {
+        const { error } = await supabase
+          .from('debitos')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+
+        mostrarBarraConfirmacao('Débito excluído com sucesso!', 'success');
+        await carregarDebitos();
+      } catch (error) {
+        console.error('Erro ao excluir débito:', error);
+        mostrarBarraConfirmacao('Erro ao excluir débito. Tente novamente.', 'error');
+      }
+    };
+
+    return (
+      <div className={`min-h-screen p-4 ${
+        modoNoturno ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-gradient-to-br from-blue-50 to-indigo-100'
+      }`}>
+        <div className="max-w-6xl mx-auto">
+          <button
+            onClick={() => setTela('transferencias-menu')}
+            className={`mb-6 flex items-center gap-2 px-6 py-3 rounded-full shadow hover:shadow-md transition-all ${
+              modoNoturno ? 'bg-slate-700 text-slate-100' : 'bg-white'
+            }`}
+          >
+            <Home size={20} />
+            Voltar
+          </button>
+
+          {/* Adicionar Débito */}
+          <div className={`rounded-2xl shadow-xl p-6 mb-6 ${modoNoturno ? 'bg-slate-800/90' : 'bg-white'}`}>
+            <h1 className={`text-3xl font-bold mb-6 flex items-center gap-3 ${
+              modoNoturno ? 'text-slate-100' : 'text-gray-800'
+            }`}>
+              <CreditCard className={modoNoturno ? 'text-orange-400' : 'text-orange-600'} size={36} />
+              Gerenciar Débitos
+            </h1>
+
+            {!mostrarFormularioDebito ? (
+              <button
+                onClick={() => setMostrarFormularioDebito(true)}
+                className="w-full bg-orange-600 text-white py-3 rounded-2xl font-bold text-lg hover:bg-orange-700 transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              >
+                <Plus size={24} />
+                Adicionar Novo Débito
+              </button>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className={`block text-sm font-semibold mb-2 ${
+                      modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                    }`}>
+                      Nome do Débito
+                    </label>
+                    <input
+                      type="text"
+                      value={formularioDebito.nome}
+                      onChange={(e) => setFormularioDebito({ ...formularioDebito, nome: e.target.value })}
+                      placeholder="Ex: Cartão de crédito, Empréstimo..."
+                      className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-lg ${
+                        modoNoturno 
+                          ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-400 focus:border-orange-400' 
+                          : 'border-gray-300 focus:border-orange-500'
+                      }`}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={`block text-sm font-semibold mb-2 ${
+                      modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                    }`}>
+                      Valor Total (R$)
+                    </label>
+                    <input
+                      type="text"
+                      value={formularioDebito.valor}
+                      onChange={(e) => setFormularioDebito({ ...formularioDebito, valor: formatarValor(e.target.value) })}
+                      placeholder="0,00"
+                      className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-lg ${
+                        modoNoturno 
+                          ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-400 focus:border-orange-400' 
+                          : 'border-gray-300 focus:border-orange-500'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={adicionarDebito}
+                    className="flex-1 bg-orange-600 text-white py-3 rounded-2xl font-bold text-lg hover:bg-orange-700 transition-colors shadow-lg hover:shadow-xl"
+                  >
+                    Adicionar Débito
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMostrarFormularioDebito(false);
+                      setFormularioDebito({ nome: '', valor: '' });
+                    }}
+                    className={`px-6 py-3 border-2 rounded-2xl font-bold text-lg transition-colors ${
+                      modoNoturno 
+                        ? 'border-slate-600 text-slate-200 hover:bg-slate-700' 
+                        : 'border-gray-300 hover:bg-gray-100'
+                    }`}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Débitos Ativos */}
+          <div className={`rounded-2xl shadow-xl p-6 mb-6 ${modoNoturno ? 'bg-slate-800/90' : 'bg-white'}`}>
+            <h2 className={`text-2xl font-bold mb-6 ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
+              Débitos Ativos ({debitosAtivos.length})
+            </h2>
+
+            {debitosAtivos.length === 0 ? (
+              <p className={`text-center py-8 ${modoNoturno ? 'text-slate-400' : 'text-gray-500'}`}>
+                Nenhum débito ativo no momento.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {debitosAtivos.map((debito) => (
+                  <div
+                    key={debito.id}
+                    className={`border-2 rounded-2xl p-4 ${
+                      modoNoturno ? 'border-slate-600 bg-slate-700/50' : 'border-gray-200'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className={`text-xl font-bold ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
+                          {debito.nome}
+                        </h3>
+                        <p className={`text-sm ${modoNoturno ? 'text-slate-400' : 'text-gray-500'}`}>
+                          Criado em: {debito.data_criacao}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => excluirDebito(debito.id)}
+                        className={`p-2 rounded-full transition-colors ${
+                          modoNoturno 
+                            ? 'text-red-400 hover:text-red-300 hover:bg-red-900/30' 
+                            : 'text-red-600 hover:text-red-800 hover:bg-red-50'
+                        }`}
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                      <div>
+                        <p className={`text-sm ${modoNoturno ? 'text-slate-400' : 'text-gray-600'}`}>Valor Total</p>
+                        <p className={`text-lg font-bold ${modoNoturno ? 'text-orange-400' : 'text-orange-600'}`}>
+                          R$ {debito.valor_total.toFixed(2)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className={`text-sm ${modoNoturno ? 'text-slate-400' : 'text-gray-600'}`}>Valor Pago</p>
+                        <p className={`text-lg font-bold ${modoNoturno ? 'text-green-400' : 'text-green-600'}`}>
+                          R$ {debito.valor_pago.toFixed(2)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className={`text-sm ${modoNoturno ? 'text-slate-400' : 'text-gray-600'}`}>Valor Restante</p>
+                        <p className={`text-lg font-bold ${modoNoturno ? 'text-red-400' : 'text-red-600'}`}>
+                          R$ {debito.valor_restante.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {debitoSelecionado?.id === debito.id ? (
+                      <div className={`space-y-3 border-t-2 pt-4 ${modoNoturno ? 'border-slate-600' : 'border-gray-200'}`}>
+                        <label className={`block text-sm font-semibold mb-2 ${
+                          modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                        }`}>
+                          Valor do Pagamento (máximo: R$ {debito.valor_restante.toFixed(2)})
+                        </label>
+                        <input
+                          type="text"
+                          value={formularioPagamento.valorPagamento}
+                          onChange={(e) => setFormularioPagamento({ valorPagamento: formatarValor(e.target.value) })}
+                          placeholder="0,00"
+                          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-lg ${
+                            modoNoturno 
+                              ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-400 focus:border-green-400' 
+                              : 'border-gray-300 focus:border-green-500'
+                          }`}
+                        />
+                        <div className="flex gap-3">
+                          <button
+                            onClick={pagarDebito}
+                            className="flex-1 bg-green-600 text-white py-3 rounded-2xl font-bold text-lg hover:bg-green-700 transition-colors"
+                          >
+                            Confirmar Pagamento
+                          </button>
+                          <button
+                            onClick={() => {
+                              setDebitoSelecionado(null);
+                              setFormularioPagamento({ valorPagamento: '' });
+                            }}
+                            className={`px-6 py-3 border-2 rounded-2xl font-bold text-lg transition-colors ${
+                              modoNoturno 
+                                ? 'border-slate-600 text-slate-200 hover:bg-slate-700' 
+                                : 'border-gray-300 hover:bg-gray-100'
+                            }`}
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setDebitoSelecionado(debito)}
+                        className="w-full bg-blue-600 text-white py-3 rounded-2xl font-bold hover:bg-blue-700 transition-colors"
+                      >
+                        Pagar Débito
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Histórico de Débitos Pagos */}
+          {debitosPagos.length > 0 && (
+            <div className={`rounded-2xl shadow-xl p-6 ${modoNoturno ? 'bg-slate-800/90' : 'bg-white'}`}>
+              <h2 className={`text-2xl font-bold mb-6 ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
+                Histórico de Débitos Pagos ({debitosPagos.length})
+              </h2>
+              <div className="space-y-3">
+                {debitosPagos.map((debito) => (
+                  <div
+                    key={debito.id}
+                    className={`border-2 rounded-xl p-4 ${
+                      modoNoturno ? 'border-green-700 bg-green-900/20' : 'border-green-200 bg-green-50'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className={`font-bold ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
+                          {debito.nome}
+                        </h3>
+                        <p className={`text-sm ${modoNoturno ? 'text-slate-400' : 'text-gray-600'}`}>
+                          Criado: {debito.data_criacao} | Pago: R$ {debito.valor_total.toFixed(2)}
+                        </p>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                        modoNoturno ? 'bg-green-900 text-green-300' : 'bg-green-200 text-green-800'
+                      }`}>
+                        PAGO
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         
         {renderNotificacoes()}
@@ -1678,26 +2163,34 @@ const getDadosGraficoLinha = () => {
     const todasTransferencias = filtrarTransferencias(false);
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <div className={`min-h-screen p-4 ${
+        modoNoturno ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-gradient-to-br from-blue-50 to-indigo-100'
+      }`}>
         <div className="max-w-6xl mx-auto">
           <button
             onClick={() => setTela('inicial')}
-            className="mb-6 flex items-center gap-2 bg-white px-6 py-3 rounded-full shadow hover:shadow-md transition-all"
+            className={`mb-6 flex items-center gap-2 px-6 py-3 rounded-full shadow hover:shadow-md transition-all ${
+              modoNoturno ? 'bg-slate-700 text-slate-100' : 'bg-white'
+            }`}
           >
             <Home size={20} />
             Voltar para Início
           </button>
 
-          <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
-            <h1 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-              <Plus className="text-blue-600" size={36} />
+          <div className={`rounded-2xl shadow-xl p-6 mb-6 ${modoNoturno ? 'bg-slate-800/90' : 'bg-white'}`}>
+            <h1 className={`text-3xl font-bold mb-6 flex items-center gap-3 ${
+              modoNoturno ? 'text-slate-100' : 'text-gray-800'
+            }`}>
+              <Plus className={modoNoturno ? 'text-blue-400' : 'text-blue-600'} size={36} />
               Adicionar Transferência
             </h1>
 
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className={`block text-sm font-semibold mb-2 ${
+                    modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                  }`}>
                     Valor (R$)
                   </label>
                   <input
@@ -1705,12 +2198,18 @@ const getDadosGraficoLinha = () => {
                     value={formulario.valor}
                     onChange={handleValorChange}
                     placeholder="0,00"
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
+                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-lg ${
+                      modoNoturno 
+                        ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-400 focus:border-blue-400' 
+                        : 'border-gray-300 focus:border-blue-500'
+                    }`}
                   />
                 </div>
 
                 <div className="relative">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className={`block text-sm font-semibold mb-2 ${
+                    modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                  }`}>
                     Data
                   </label>
                   <div className="relative">
@@ -1720,21 +2219,29 @@ const getDadosGraficoLinha = () => {
                       readOnly
                       placeholder="Selecione a data"
                       onClick={() => setMostrarCalendario(!mostrarCalendario)}
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none cursor-pointer text-lg"
+                      className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none cursor-pointer text-lg ${
+                        modoNoturno 
+                          ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-400 focus:border-blue-400' 
+                          : 'border-gray-300 focus:border-blue-500'
+                      }`}
                     />
                     <Calendar
-                      className="absolute right-3 top-3 text-gray-400 pointer-events-none"
+                      className={`absolute right-3 top-3 pointer-events-none ${
+                        modoNoturno ? 'text-slate-400' : 'text-gray-400'
+                      }`}
                       size={24}
                     />
                   </div>
 
                   {mostrarCalendario && (
-                    <div className="absolute z-50 mt-2 bg-white border-2 border-gray-300 rounded-lg shadow-2xl p-4 w-80">
+                    <div className={`absolute z-50 mt-2 border-2 rounded-lg shadow-2xl p-4 w-80 ${
+                      modoNoturno ? 'bg-slate-800 border-slate-600' : 'bg-white border-gray-300'
+                    }`}>
                       <div className="flex items-center justify-between mb-4">
                         <button
                           type="button"
                           onClick={() => mudarMes(-1)}
-                          className="p-2 hover:bg-gray-100 rounded-full"
+                          className={`p-2 rounded-full ${modoNoturno ? 'hover:bg-slate-700' : 'hover:bg-gray-100'}`}
                         >
                           ←
                         </button>
@@ -1743,7 +2250,11 @@ const getDadosGraficoLinha = () => {
                           <button
                             type="button"
                             onClick={() => setMostrarAnos(!mostrarAnos)}
-                            className="font-bold text-gray-800 hover:bg-gray-100 px-3 py-1 rounded"
+                            className={`font-bold px-3 py-1 rounded ${
+                              modoNoturno 
+                                ? 'text-slate-100 hover:bg-slate-700' 
+                                : 'text-gray-800 hover:bg-gray-100'
+                            }`}
                           >
                             {meses[calendario.mes]} {calendario.ano}
                           </button>
@@ -1752,22 +2263,27 @@ const getDadosGraficoLinha = () => {
                         <button
                           type="button"
                           onClick={() => mudarMes(1)}
-                          className="p-2 hover:bg-gray-100 rounded-full"
+                          className={`p-2 rounded-full ${modoNoturno ? 'hover:bg-slate-700' : 'hover:bg-gray-100'}`}
                         >
                           →
                         </button>
                       </div>
 
                       {mostrarAnos && (
-                        <div className="absolute top-16 left-0 right-0 bg-white border-2 border-gray-300 rounded-lg shadow-xl p-2 max-h-60 overflow-y-auto z-50">
+                        <div className={`absolute top-16 left-0 right-0 border-2 rounded-lg shadow-xl p-2 max-h-60 overflow-y-auto z-50 ${
+                          modoNoturno ? 'bg-slate-800 border-slate-600' : 'bg-white border-gray-300'
+                        }`}>
                           <div className="grid grid-cols-3 gap-2">
                             {gerarListaAnos().map(ano => (
                               <button
                                 key={ano}
                                 type="button"
                                 onClick={() => selecionarAno(ano)}
-                                className={`p-2 rounded hover:bg-blue-100 ${ano === calendario.ano ? 'bg-blue-600 text-white font-bold' : ''
-                                  }`}
+                                className={`p-2 rounded ${
+                                  ano === calendario.ano 
+                                    ? 'bg-blue-600 text-white font-bold' 
+                                    : (modoNoturno ? 'hover:bg-slate-700' : 'hover:bg-blue-100')
+                                }`}
                               >
                                 {ano}
                               </button>
@@ -1778,7 +2294,9 @@ const getDadosGraficoLinha = () => {
 
                       <div className="grid grid-cols-7 gap-1 mb-2">
                         {diasSemana.map(dia => (
-                          <div key={dia} className="text-center text-xs font-bold text-gray-600 py-1">
+                          <div key={dia} className={`text-center text-xs font-bold py-1 ${
+                            modoNoturno ? 'text-slate-300' : 'text-gray-600'
+                          }`}>
                             {dia}
                           </div>
                         ))}
@@ -1792,13 +2310,19 @@ const getDadosGraficoLinha = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className={`block text-sm font-semibold mb-2 ${
+                    modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                  }`}>
                     Tipo de Transferência
                   </label>
                   <select
                     value={formulario.tipo}
                     onChange={(e) => setFormulario({ ...formulario, tipo: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
+                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-lg ${
+                      modoNoturno 
+                        ? 'bg-slate-700 border-slate-600 text-slate-100 focus:border-blue-400' 
+                        : 'border-gray-300 focus:border-blue-500'
+                    }`}
                   >
                     <option value="especie">Em Espécie</option>
                     <option value="digital">Transferência Digital</option>
@@ -1806,7 +2330,9 @@ const getDadosGraficoLinha = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className={`block text-sm font-semibold mb-2 ${
+                    modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                  }`}>
                     Descrição (opcional)
                   </label>
                   <input
@@ -1814,7 +2340,11 @@ const getDadosGraficoLinha = () => {
                     value={formulario.descricao}
                     onChange={(e) => setFormulario({ ...formulario, descricao: e.target.value })}
                     placeholder="Ex: Mesada, Compras..."
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
+                    className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-lg ${
+                      modoNoturno 
+                        ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder-slate-400 focus:border-blue-400' 
+                        : 'border-gray-300 focus:border-blue-500'
+                    }`}
                   />
                 </div>
               </div>
@@ -1829,28 +2359,48 @@ const getDadosGraficoLinha = () => {
           </div>
 
           {/* Histórico em tempo real */}
-          <div className="bg-white rounded-2xl shadow-xl p-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Histórico de Transferências</h2>
+          <div className={`rounded-2xl shadow-xl p-6 ${modoNoturno ? 'bg-slate-800/90' : 'bg-white'}`}>
+            <h2 className={`text-2xl font-bold mb-6 ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
+              Histórico de Transferências
+            </h2>
 
             {todasTransferencias.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">Nenhuma transferência registrada ainda.</p>
+              <p className={`text-center py-8 ${modoNoturno ? 'text-slate-400' : 'text-gray-500'}`}>
+                Nenhuma transferência registrada ainda.
+              </p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b-2 border-gray-200">
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Data</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Valor</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Tipo</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Descrição</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Registrado em</th>
-                      <th className="text-center py-3 px-4 font-semibold text-gray-700">Ações</th>
+                    <tr className={`border-b-2 ${modoNoturno ? 'border-slate-600' : 'border-gray-200'}`}>
+                      <th className={`text-left py-3 px-4 font-semibold ${
+                        modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                      }`}>Data</th>
+                      <th className={`text-left py-3 px-4 font-semibold ${
+                        modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                      }`}>Valor</th>
+                      <th className={`text-left py-3 px-4 font-semibold ${
+                        modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                      }`}>Tipo</th>
+                      <th className={`text-left py-3 px-4 font-semibold ${
+                        modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                      }`}>Descrição</th>
+                      <th className={`text-left py-3 px-4 font-semibold ${
+                        modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                      }`}>Registrado em</th>
+                      <th className={`text-center py-3 px-4 font-semibold ${
+                        modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                      }`}>Ações</th>
                     </tr>
                   </thead>
                   <tbody>
                     {todasTransferencias.map((t) => (
-                      <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td className="py-3 px-4">{t.data}</td>
+                      <tr key={t.id} className={`border-b ${
+                        modoNoturno 
+                          ? 'border-slate-700 hover:bg-slate-700/50' 
+                          : 'border-gray-100 hover:bg-gray-50'
+                      }`}>
+                        <td className={`py-3 px-4 ${modoNoturno ? 'text-slate-200' : ''}`}>{t.data}</td>
                         <td className="py-3 px-4 font-semibold text-green-600">R$ {t.valor}</td>
                         <td className="py-3 px-4">
                           <span className={`px-3 py-1 rounded-full text-sm font-medium ${t.tipo === 'especie'
@@ -1860,12 +2410,20 @@ const getDadosGraficoLinha = () => {
                             {t.tipo === 'especie' ? 'Em Espécie' : 'Digital'}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-gray-600">{t.descricao || '-'}</td>
-                        <td className="py-3 px-4 text-sm text-gray-500">{t.dataRegistro}</td>
+                        <td className={`py-3 px-4 ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
+                          {t.descricao || '-'}
+                        </td>
+                        <td className={`py-3 px-4 text-sm ${modoNoturno ? 'text-slate-400' : 'text-gray-500'}`}>
+                          {t.dataRegistro}
+                        </td>
                         <td className="py-3 px-4 text-center">
                           <button
                             onClick={() => excluirTransferencia(t.id)}
-                            className="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded-full transition-colors"
+                            className={`p-2 rounded-full transition-colors ${
+                              modoNoturno 
+                                ? 'text-red-400 hover:text-red-300 hover:bg-red-900/30' 
+                                : 'text-red-600 hover:text-red-800 hover:bg-red-50'
+                            }`}
                           >
                             <X size={20} />
                           </button>
@@ -3051,20 +3609,26 @@ const getDadosGraficoLinha = () => {
   const maxGrafico = calcularMaximoGrafico();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className={`min-h-screen p-4 ${
+      modoNoturno ? 'bg-gradient-to-br from-slate-800 to-slate-900' : 'bg-gradient-to-br from-blue-50 to-indigo-100'
+    }`}>
       <div className="max-w-7xl mx-auto">
         <button
           onClick={() => setTela('inicial')}
-          className="mb-6 flex items-center gap-2 bg-white px-6 py-3 rounded-full shadow hover:shadow-md transition-all"
+          className={`mb-6 flex items-center gap-2 px-6 py-3 rounded-full shadow hover:shadow-md transition-all ${
+            modoNoturno ? 'bg-slate-700 text-slate-100' : 'bg-white'
+          }`}
         >
           <Home size={20} />
           Voltar para Início
         </button>
 
         {/* Filtros e Download */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
+        <div className={`rounded-2xl shadow-xl p-6 mb-6 ${modoNoturno ? 'bg-slate-800/90' : 'bg-white'}`}>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <h2 className={`text-2xl font-bold flex items-center gap-2 ${
+              modoNoturno ? 'text-slate-100' : 'text-gray-800'
+            }`}>
               <Filter size={28} />
               Filtros e Exportação
             </h2>
@@ -3081,13 +3645,19 @@ const getDadosGraficoLinha = () => {
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className={`block text-sm font-semibold mb-2 ${
+                  modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                }`}>
                   Ano
                 </label>
                 <select
                   value={anoFiltro}
                   onChange={(e) => setAnoFiltro(parseInt(e.target.value))}
-                  className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                  className={`w-full px-4 py-2 border-2 rounded-lg focus:outline-none ${
+                    modoNoturno 
+                      ? 'bg-slate-700 border-slate-600 text-slate-100 focus:border-blue-400' 
+                      : 'border-gray-300 focus:border-blue-500'
+                  }`}
                 >
                   {anosDisponiveis.length > 0 ? (
                     anosDisponiveis.map(ano => (
@@ -3100,9 +3670,17 @@ const getDadosGraficoLinha = () => {
               </div>
 
               <div className="flex items-end">
-                <div className="w-full bg-gradient-to-r from-green-50 to-green-100 p-4 rounded-lg border-2 border-green-200">
-                  <p className="text-sm text-gray-600 font-semibold">Total do Período</p>
-                  <p className="text-2xl font-bold text-green-600">
+                <div className={`w-full p-4 rounded-lg border-2 ${
+                  modoNoturno 
+                    ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-green-700' 
+                    : 'bg-gradient-to-r from-green-50 to-green-100 border-green-200'
+                }`}>
+                  <p className={`text-sm font-semibold ${
+                    modoNoturno ? 'text-slate-300' : 'text-gray-600'
+                  }`}>Total do Período</p>
+                  <p className={`text-2xl font-bold ${
+                    modoNoturno ? 'text-green-400' : 'text-green-600'
+                  }`}>
                     R$ {calcularTotal(transferenciasFiltradas).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
@@ -3112,13 +3690,17 @@ const getDadosGraficoLinha = () => {
             {/* Botões de Meses */}
             <div>
               <div className="flex justify-between items-center mb-3">
-                <label className="block text-sm font-semibold text-gray-700">
+                <label className={`block text-sm font-semibold ${
+                  modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                }`}>
                   Selecione os meses (pode escolher vários)
                 </label>
                 {mesesSelecionados.length > 0 && (
                   <button
                     onClick={limparSelecaoMeses}
-                    className="text-sm text-red-600 hover:text-red-800 font-semibold"
+                    className={`text-sm font-semibold ${
+                      modoNoturno ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-800'
+                    }`}
                   >
                     Limpar Seleção
                   </button>
@@ -3135,7 +3717,9 @@ const getDadosGraficoLinha = () => {
                         onClick={() => toggleMes(index)}
                         className={`w-full py-2 px-3 rounded-2xl font-semibold text-sm transition-all ${selecionado
                             ? 'bg-blue-600 text-white shadow-md'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            : (modoNoturno 
+                                ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' 
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200')
                           }`}
                       >
                         {mes}
@@ -3157,9 +3741,11 @@ const getDadosGraficoLinha = () => {
         {/* Gráficos */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Gráfico de Rosquinha */}
-          <div className="bg-white rounded-2xl shadow-xl p-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <PieChart size={24} className="text-blue-600" />
+          <div className={`rounded-2xl shadow-xl p-6 ${modoNoturno ? 'bg-slate-800/90' : 'bg-white'}`}>
+            <h3 className={`text-xl font-bold mb-4 flex items-center gap-2 ${
+              modoNoturno ? 'text-slate-100' : 'text-gray-800'
+            }`}>
+              <PieChart size={24} className={modoNoturno ? 'text-blue-400' : 'text-blue-600'} />
               Tipos de Transferência
             </h3>
             {dadosRosquinha.length > 0 ? (
@@ -3188,8 +3774,10 @@ const getDadosGraficoLinha = () => {
                   {dadosRosquinha.map((item, index) => (
                     <div key={index} className="flex items-center gap-2">
                       <div className="w-4 h-4 rounded" style={{ backgroundColor: item.color }}></div>
-                      <span className="text-sm font-semibold">{item.name}</span>
-                      <span className="text-sm text-gray-600">
+                      <span className={`text-sm font-semibold ${modoNoturno ? 'text-slate-200' : ''}`}>
+                        {item.name}
+                      </span>
+                      <span className={`text-sm ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
                         R$ {item.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </span>
                     </div>
@@ -3197,14 +3785,18 @@ const getDadosGraficoLinha = () => {
                 </div>
               </div>
             ) : (
-              <p className="text-center text-gray-500 py-12">Nenhum dado disponível para o período selecionado</p>
+              <p className={`text-center py-12 ${modoNoturno ? 'text-slate-400' : 'text-gray-500'}`}>
+                Nenhum dado disponível para o período selecionado
+              </p>
             )}
           </div>
 
           {/* Gráfico de Linha */}
-          <div className="bg-white rounded-2xl shadow-xl p-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <TrendingUp size={24} className="text-blue-600" />
+          <div className={`rounded-2xl shadow-xl p-6 ${modoNoturno ? 'bg-slate-800/90' : 'bg-white'}`}>
+            <h3 className={`text-xl font-bold mb-4 flex items-center gap-2 ${
+              modoNoturno ? 'text-slate-100' : 'text-gray-800'
+            }`}>
+              <TrendingUp size={24} className={modoNoturno ? 'text-blue-400' : 'text-blue-600'} />
               Transferências por Mês - {anoFiltro}
             </h3>
             <ResponsiveContainer width="100%" height={300}>
@@ -3233,27 +3825,45 @@ const getDadosGraficoLinha = () => {
         </div>
 
         {/* Histórico - Apenas Visualização */}
-        <div className="bg-white rounded-2xl shadow-xl p-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">Histórico de Transferências</h2>
+        <div className={`rounded-2xl shadow-xl p-6 ${modoNoturno ? 'bg-slate-800/90' : 'bg-white'}`}>
+          <h2 className={`text-2xl font-bold mb-6 ${modoNoturno ? 'text-slate-100' : 'text-gray-800'}`}>
+            Histórico de Transferências
+          </h2>
 
           {transferenciasFiltradas.length === 0 ? (
-            <p className="text-center text-gray-500 py-8">Nenhuma transferência encontrada no período selecionado.</p>
+            <p className={`text-center py-8 ${modoNoturno ? 'text-slate-400' : 'text-gray-500'}`}>
+              Nenhuma transferência encontrada no período selecionado.
+            </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b-2 border-gray-200">
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Data</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Valor</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Tipo</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Descrição</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Registrado em</th>
+                  <tr className={`border-b-2 ${modoNoturno ? 'border-slate-600' : 'border-gray-200'}`}>
+                    <th className={`text-left py-3 px-4 font-semibold ${
+                      modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                    }`}>Data</th>
+                    <th className={`text-left py-3 px-4 font-semibold ${
+                      modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                    }`}>Valor</th>
+                    <th className={`text-left py-3 px-4 font-semibold ${
+                      modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                    }`}>Tipo</th>
+                    <th className={`text-left py-3 px-4 font-semibold ${
+                      modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                    }`}>Descrição</th>
+                    <th className={`text-left py-3 px-4 font-semibold ${
+                      modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                    }`}>Registrado em</th>
                   </tr>
                 </thead>
                 <tbody>
                   {transferenciasFiltradas.map((t) => (
-                    <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 px-4">{t.data}</td>
+                    <tr key={t.id} className={`border-b ${
+                      modoNoturno 
+                        ? 'border-slate-700 hover:bg-slate-700/50' 
+                        : 'border-gray-100 hover:bg-gray-50'
+                    }`}>
+                      <td className={`py-3 px-4 ${modoNoturno ? 'text-slate-200' : ''}`}>{t.data}</td>
                       <td className="py-3 px-4 font-semibold text-green-600">R$ {t.valor}</td>
                       <td className="py-3 px-4">
                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${t.tipo === 'especie'
@@ -3263,8 +3873,12 @@ const getDadosGraficoLinha = () => {
                           {t.tipo === 'especie' ? 'Em Espécie' : 'Digital'}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-gray-600">{t.descricao || '-'}</td>
-                      <td className="py-3 px-4 text-sm text-gray-500">{t.dataRegistro}</td>
+                      <td className={`py-3 px-4 ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
+                        {t.descricao || '-'}
+                      </td>
+                      <td className={`py-3 px-4 text-sm ${modoNoturno ? 'text-slate-400' : 'text-gray-500'}`}>
+                        {t.dataRegistro}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
