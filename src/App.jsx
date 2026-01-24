@@ -2371,9 +2371,7 @@ const getDadosGraficoLinha = () => {
                               onClick={() => setFormularioPagamento({ ...formularioPagamento, tipoPagamento: 'digital' })}
                               className={`flex-1 py-3 px-4 rounded-lg border-2 font-semibold transition-all ${
                                 formularioPagamento.tipoPagamento === 'digital'
-                                  ? modoNoturno
-                                    ? 'bg-blue-600 border-blue-500 text-white'
-                                    : 'bg-blue-600 border-blue-500 text-white'
+                                  ? 'bg-blue-600 border-blue-500 text-white'
                                   : modoNoturno
                                     ? 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600'
                                     : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -2386,9 +2384,7 @@ const getDadosGraficoLinha = () => {
                               onClick={() => setFormularioPagamento({ ...formularioPagamento, tipoPagamento: 'especie' })}
                               className={`flex-1 py-3 px-4 rounded-lg border-2 font-semibold transition-all ${
                                 formularioPagamento.tipoPagamento === 'especie'
-                                  ? modoNoturno
-                                    ? 'bg-orange-600 border-orange-500 text-white'
-                                    : 'bg-orange-600 border-orange-500 text-white'
+                                  ? 'bg-orange-600 border-orange-500 text-white'
                                   : modoNoturno
                                     ? 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600'
                                     : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
