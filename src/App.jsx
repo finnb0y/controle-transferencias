@@ -82,7 +82,8 @@ const ControleTransferencias = () => {
     valor: ''
   });
   const [formularioPagamento, setFormularioPagamento] = useState({
-    valorPagamento: ''
+    valorPagamento: '',
+    tipoPagamento: 'digital'
   });
 
 
@@ -2081,7 +2082,8 @@ const getDadosGraficoLinha = () => {
             .update({
               valor_pago: novoValorPago,
               valor_restante: 0,
-              status: 'pago'
+              status: 'pago',
+              tipo_pagamento: formularioPagamento.tipoPagamento
             })
             .eq('id', debitoSelecionado.id);
 
@@ -2103,7 +2105,7 @@ const getDadosGraficoLinha = () => {
             .insert([{
               valor: formularioPagamento.valorPagamento,
               data: dataFormatada,
-              tipo: 'digital',
+              tipo: formularioPagamento.tipoPagamento,
               descricao: `Pagamento: ${debitoSelecionado.nome}`
             }]);
 
@@ -2121,7 +2123,8 @@ const getDadosGraficoLinha = () => {
             .update({
               valor_pago: novoValorPago,
               valor_restante: novoValorRestante,
-              numero_parcela: numeroParcela
+              numero_parcela: numeroParcela,
+              tipo_pagamento: formularioPagamento.tipoPagamento
             })
             .eq('id', debitoSelecionado.id);
 
@@ -2133,7 +2136,7 @@ const getDadosGraficoLinha = () => {
             .insert([{
               valor: formularioPagamento.valorPagamento,
               data: dataFormatada,
-              tipo: 'digital',
+              tipo: formularioPagamento.tipoPagamento,
               descricao: `Pagamento parcial ${numeroParcela}: ${debitoSelecionado.nome}`
             }]);
 
@@ -2142,7 +2145,7 @@ const getDadosGraficoLinha = () => {
           mostrarBarraConfirmacao(`Pagamento parcial registrado! Restante: R$ ${novoValorRestante.toFixed(2)}`, 'success');
         }
 
-        setFormularioPagamento({ valorPagamento: '' });
+        setFormularioPagamento({ valorPagamento: '', tipoPagamento: 'digital' });
         setDebitoSelecionado(null);
         await carregarDebitos();
         await carregarDados();
@@ -2323,6 +2326,11 @@ const getDadosGraficoLinha = () => {
                         <p className={`text-lg font-bold ${modoNoturno ? 'text-green-400' : 'text-green-600'}`}>
                           R$ {debito.valor_pago.toFixed(2)}
                         </p>
+                        {debito.valor_pago > 0 && debito.tipo_pagamento && (
+                          <p className={`text-xs mt-1 ${modoNoturno ? 'text-slate-400' : 'text-gray-500'}`}>
+                            {debito.tipo_pagamento === 'digital' ? '💳 Digital' : '💵 Em Espécie'}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <p className={`text-sm ${modoNoturno ? 'text-slate-400' : 'text-gray-600'}`}>Valor Restante</p>
@@ -2342,7 +2350,7 @@ const getDadosGraficoLinha = () => {
                         <input
                           type="text"
                           value={formularioPagamento.valorPagamento}
-                          onChange={(e) => setFormularioPagamento({ valorPagamento: formatarValor(e.target.value) })}
+                          onChange={(e) => setFormularioPagamento({ ...formularioPagamento, valorPagamento: formatarValor(e.target.value) })}
                           placeholder="0,00"
                           className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-lg ${
                             modoNoturno 
@@ -2350,6 +2358,47 @@ const getDadosGraficoLinha = () => {
                               : 'border-gray-300 focus:border-green-500'
                           }`}
                         />
+                        
+                        <div>
+                          <label className={`block text-sm font-semibold mb-2 ${
+                            modoNoturno ? 'text-slate-200' : 'text-gray-700'
+                          }`}>
+                            Tipo de Pagamento
+                          </label>
+                          <div className="flex gap-4">
+                            <button
+                              type="button"
+                              onClick={() => setFormularioPagamento({ ...formularioPagamento, tipoPagamento: 'digital' })}
+                              className={`flex-1 py-3 px-4 rounded-lg border-2 font-semibold transition-all ${
+                                formularioPagamento.tipoPagamento === 'digital'
+                                  ? modoNoturno
+                                    ? 'bg-blue-600 border-blue-500 text-white'
+                                    : 'bg-blue-600 border-blue-500 text-white'
+                                  : modoNoturno
+                                    ? 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600'
+                                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              💳 Digital
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setFormularioPagamento({ ...formularioPagamento, tipoPagamento: 'especie' })}
+                              className={`flex-1 py-3 px-4 rounded-lg border-2 font-semibold transition-all ${
+                                formularioPagamento.tipoPagamento === 'especie'
+                                  ? modoNoturno
+                                    ? 'bg-orange-600 border-orange-500 text-white'
+                                    : 'bg-orange-600 border-orange-500 text-white'
+                                  : modoNoturno
+                                    ? 'bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600'
+                                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              💵 Em Espécie
+                            </button>
+                          </div>
+                        </div>
+                        
                         <div className="flex gap-3">
                           <button
                             onClick={pagarDebito}
@@ -2360,7 +2409,7 @@ const getDadosGraficoLinha = () => {
                           <button
                             onClick={() => {
                               setDebitoSelecionado(null);
-                              setFormularioPagamento({ valorPagamento: '' });
+                              setFormularioPagamento({ valorPagamento: '', tipoPagamento: 'digital' });
                             }}
                             className={`px-6 py-3 border-2 rounded-2xl font-bold text-lg transition-colors ${
                               modoNoturno 
@@ -2407,6 +2456,11 @@ const getDadosGraficoLinha = () => {
                         </h3>
                         <p className={`text-sm ${modoNoturno ? 'text-slate-400' : 'text-gray-600'}`}>
                           Criado: {debito.data_criacao} | Pago: R$ {debito.valor_total.toFixed(2)}
+                          {debito.tipo_pagamento && (
+                            <span className="ml-2">
+                              | {debito.tipo_pagamento === 'digital' ? '💳 Digital' : '💵 Em Espécie'}
+                            </span>
+                          )}
                         </p>
                       </div>
                       <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
