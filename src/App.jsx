@@ -3570,7 +3570,7 @@ const getDadosGraficoLinha = () => {
                                   Semana: {semana.data_inicio_semana} - {semana.data_fim_semana}
                                 </p>
                                 <p className={`text-sm ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
-                                  {semana.dias_treino} dia(s) de treino • R$ {(DIAS_POR_SEMANA * VALOR_POR_DIA_TREINO).toFixed(2)} (semana completa)
+                                  {semana.dias_treino} dia(s) de treino • R$ {(DIAS_POR_SEMANA * VALOR_POR_DIA_TREINO).toFixed(2)} {semana.dias_treino === DIAS_POR_SEMANA ? '(semana completa)' : '(semana incompleta)'}
                                 </p>
                               </div>
                               {selecionada && (
