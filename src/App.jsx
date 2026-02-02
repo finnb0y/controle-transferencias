@@ -1622,12 +1622,10 @@ const getDadosGraficoLinha = () => {
       });
       
       // Calcular total de dias de treino
-      // Para débito: se a semana foi recompensada (atingiu o mínimo), conta 7 dias
-      // Isso incentiva o cumprimento da meta semanal com pagamento pela semana completa
-      const totalDiasTreino = semanasOrdenadas.reduce((acc, _) => {
-        // Se a semana foi recompensada, ela atingiu o mínimo necessário
-        // Portanto, pagar pela semana completa (DIAS_POR_SEMANA dias)
-        return acc + DIAS_POR_SEMANA;
+      // Débito proporcional ao número real de treinos registrados em cada semana
+      const totalDiasTreino = semanasOrdenadas.reduce((acc, semana) => {
+        // Usar o número real de dias de treino registrados
+        return acc + semana.dias_treino;
       }, 0);
       
       // Valor: VALOR_POR_DIA_TREINO reais por dia de treino
@@ -3570,7 +3568,7 @@ const getDadosGraficoLinha = () => {
                                   Semana: {semana.data_inicio_semana} - {semana.data_fim_semana}
                                 </p>
                                 <p className={`text-sm ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
-                                  {semana.dias_treino} dia(s) de treino • R$ {(DIAS_POR_SEMANA * VALOR_POR_DIA_TREINO).toFixed(2)} {semana.dias_treino === DIAS_POR_SEMANA ? '(semana completa)' : '(semana incompleta)'}
+                                  {semana.dias_treino} dia(s) de treino • R$ {(semana.dias_treino * VALOR_POR_DIA_TREINO).toFixed(2)} {semana.dias_treino === DIAS_POR_SEMANA ? '(semana completa)' : '(semana incompleta)'}
                                 </p>
                               </div>
                               {selecionada && (
