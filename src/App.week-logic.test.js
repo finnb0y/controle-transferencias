@@ -122,21 +122,20 @@ describe('Week Completion and Reward Eligibility', () => {
 
   it('should calculate correct debt value for rewarded weeks', () => {
     const VALOR_POR_DIA_TREINO = 10;
-    const DIAS_POR_SEMANA = 7;
     
-    // Any rewarded week should be valued at 7 days (full week)
+    // Debt should be proportional to actual training days
     const semana1 = { dias_treino: 4 }; // Met minimum
     const semana2 = { dias_treino: 5 }; // More than minimum
     const semana3 = { dias_treino: 7 }; // All days
 
-    const valorSemana1 = DIAS_POR_SEMANA * VALOR_POR_DIA_TREINO; // R$70
-    const valorSemana2 = DIAS_POR_SEMANA * VALOR_POR_DIA_TREINO; // R$70
-    const valorSemana3 = DIAS_POR_SEMANA * VALOR_POR_DIA_TREINO; // R$70
+    const valorSemana1 = semana1.dias_treino * VALOR_POR_DIA_TREINO; // R$40
+    const valorSemana2 = semana2.dias_treino * VALOR_POR_DIA_TREINO; // R$50
+    const valorSemana3 = semana3.dias_treino * VALOR_POR_DIA_TREINO; // R$70
 
-    expect(valorSemana1).toBe(70);
-    expect(valorSemana2).toBe(70);
+    expect(valorSemana1).toBe(40);
+    expect(valorSemana2).toBe(50);
     expect(valorSemana3).toBe(70);
-    expect(valorSemana1).toBe(valorSemana2);
-    expect(valorSemana2).toBe(valorSemana3);
+    expect(valorSemana3).toBeGreaterThan(valorSemana2);
+    expect(valorSemana2).toBeGreaterThan(valorSemana1);
   });
 });

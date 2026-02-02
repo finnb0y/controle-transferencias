@@ -3524,7 +3524,7 @@ const getDadosGraficoLinha = () => {
                 </div>
 
                 <p className={`mb-6 ${modoNoturno ? 'text-slate-300' : 'text-gray-600'}`}>
-                  Selecione as semanas que deseja incluir no débito. Semanas que atingiram a meta valem R$ {(DIAS_POR_SEMANA * VALOR_POR_DIA_TREINO).toFixed(2)} ({DIAS_POR_SEMANA} dias × R$ {VALOR_POR_DIA_TREINO},00).
+                  Selecione as semanas que deseja incluir no débito. O valor será calculado proporcionalmente aos dias de treino realizados (R$ {VALOR_POR_DIA_TREINO},00 por dia).
                 </p>
 
                 {/* Lista de semanas não pagas */}
@@ -3595,10 +3595,10 @@ const getDadosGraficoLinha = () => {
                       • Semanas selecionadas: <strong>{semanasParaDebito.length}</strong>
                     </p>
                     <p className={modoNoturno ? 'text-slate-200' : 'text-gray-700'}>
-                      • Total de semanas: <strong>{semanasParaDebito.length}</strong> (cada semana = {DIAS_POR_SEMANA} dias)
+                      • Total de dias de treino: <strong>{semanasParaDebito.reduce((acc, s) => acc + s.dias_treino, 0)}</strong> dias
                     </p>
                     <p className={`text-lg font-bold mt-2 ${modoNoturno ? 'text-green-400' : 'text-green-600'}`}>
-                      • Valor total: R$ {(semanasParaDebito.length * DIAS_POR_SEMANA * VALOR_POR_DIA_TREINO).toFixed(2)}
+                      • Valor total: R$ {(semanasParaDebito.reduce((acc, s) => acc + s.dias_treino, 0) * VALOR_POR_DIA_TREINO).toFixed(2)}
                     </p>
                   </div>
                 )}
